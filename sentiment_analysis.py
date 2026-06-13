@@ -20,9 +20,15 @@ Hướng dẫn chạy trên Kaggle:
 # ==============================================================================
 # 0. IMPORT THƯ VIỆN
 # ==============================================================================
+# import sys
+
+# if sys.version_info >= (3, 13):
+#     raise RuntimeError(
+#         "This project requires Python 3.11 or 3.12. "
+#         "The current interpreter is too new for the TensorFlow/pandas stack used here."
+#     )
 
 import numpy as np
-import pandas as pd
 import re
 import os
 import matplotlib
@@ -46,6 +52,14 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 
 import kagglehub
 
+try:
+    import pandas as pd
+except Exception as exc:
+    raise RuntimeError(
+        "pandas could not be imported. Install the project dependencies with "
+        "'pip install -r requirements.txt' inside a Python 3.11 or 3.12 environment."
+    ) from exc
+
 # Kiểm tra GPU trên Kaggle
 print("TensorFlow version:", tf.__version__)
 gpus = tf.config.list_physical_devices('GPU')
@@ -57,7 +71,8 @@ if not gpus:
 # 1. CẤU HÌNH
 # ==============================================================================
 
-OUTPUT_DIR = '/kaggle/working'
+OUTPUT_DIR = './outputs'
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # ---- Tham số mô hình ----
 MAX_WORDS = 50000       # Kích thước từ điển tối đa
