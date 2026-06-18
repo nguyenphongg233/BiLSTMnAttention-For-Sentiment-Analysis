@@ -1,0 +1,32 @@
+{
+  "model_key": "rnn",
+  "model_name": "SimpleRNN",
+  "parameters": 3460997,
+  "epochs_trained": 4,
+  "training_seconds": 133.8114591,
+  "inference_ms_per_sample": 0.3691020338152419,
+  "validation_samples": 4081,
+  "config": {
+    "max_words": 50000,
+    "max_len": 200,
+    "embedding_dim": 128,
+    "dropout_rate": 0.3,
+    "num_classes": 5,
+    "batch_size": 128,
+    "epochs": 10,
+    "validation_split": 0.2,
+    "seed": 42,
+    "max_samples": 100000,
+    "use_class_weights": true,
+    "output_dir": "outputs/rnn",
+    "rnn_units": 128
+  },
+  "metrics": {
+    "accuracy": 0.15657926978681697,
+    "macro_precision": 0.3070520606084156,
+    "macro_recall": 0.23287810737133405,
+    "macro_f1": 0.1189487542067024,
+    "weighted_f1": 0.18394888421027086,
+    "rating_mae": 1.2837539818671895
+  }
+}

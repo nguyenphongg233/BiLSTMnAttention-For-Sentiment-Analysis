@@ -1,0 +1,34 @@
+{
+  "model_key": "transformer",
+  "model_name": "Transformer Encoder",
+  "parameters": 3586181,
+  "epochs_trained": 6,
+  "training_seconds": 26.1655707,
+  "inference_ms_per_sample": 0.0986620681205588,
+  "validation_samples": 4081,
+  "config": {
+    "max_words": 50000,
+    "max_len": 200,
+    "embedding_dim": 128,
+    "dropout_rate": 0.3,
+    "num_classes": 5,
+    "batch_size": 128,
+    "epochs": 10,
+    "validation_split": 0.2,
+    "seed": 42,
+    "max_samples": 100000,
+    "use_class_weights": true,
+    "output_dir": "outputs/transformer",
+    "num_heads": 4,
+    "ff_dim": 256,
+    "transformer_blocks": 1
+  },
+  "metrics": {
+    "accuracy": 0.6895368782161235,
+    "macro_precision": 0.47383892088902535,
+    "macro_recall": 0.48729683261447454,
+    "macro_f1": 0.4635297506443786,
+    "weighted_f1": 0.7195305954452877,
+    "rating_mae": 0.47316834109286937
+  }
+}
