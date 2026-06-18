@@ -2,9 +2,9 @@
   "model_key": "transformer",
   "model_name": "Transformer Encoder",
   "parameters": 3585921,
-  "epochs_trained": 4,
-  "training_seconds": 26.37183387496043,
-  "inference_ms_per_sample": 0.14891316468401358,
+  "epochs_trained": 7,
+  "training_seconds": 35.2570962,
+  "inference_ms_per_sample": 0.13351801029159588,
   "validation_samples": 4081,
   "config": {
     "max_words": 50000,
@@ -16,20 +16,27 @@
     "epochs": 10,
     "validation_split": 0.2,
     "seed": 42,
-    "max_samples": null,
+    "max_samples": 100000,
     "use_class_weights": true,
     "output_dir": "outputs/transformer",
     "num_heads": 4,
     "ff_dim": 256,
     "transformer_blocks": 1
   },
+  "class_weights": {
+    "1": 0.31501640609920867,
+    "2": 3.389615784008307,
+    "3": 4.938275340393344,
+    "4": 3.4180104712041883,
+    "5": 0.9657396449704142
+  },
   "metrics": {
-    "accuracy": 0.170056358735604,
-    "macro_precision": 0.39591827039150346,
-    "macro_recall": 0.3407956939286561,
-    "macro_f1": 0.20636312759392111,
-    "weighted_f1": 0.16566936581688305,
-    "rating_mae": 1.2031364861553542,
-    "rating_mse": 1.9747450351715088
+    "accuracy": 0.45797598627787306,
+    "macro_precision": 0.43252957901851674,
+    "macro_recall": 0.43217558208659135,
+    "macro_f1": 0.3535565371815957,
+    "weighted_f1": 0.5489004984080212,
+    "rating_mae": 0.6765498652291105,
+    "rating_mse": 0.9011059403419495
   }
 }

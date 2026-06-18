@@ -1,10 +1,10 @@
 {
   "model_key": "rnn",
   "model_name": "SimpleRNN",
-  "parameters": 3460997,
-  "epochs_trained": 4,
-  "training_seconds": 133.8114591,
-  "inference_ms_per_sample": 0.3691020338152419,
+  "parameters": 3460737,
+  "epochs_trained": 10,
+  "training_seconds": 441.33077030000004,
+  "inference_ms_per_sample": 0.18331617250673854,
   "validation_samples": 4081,
   "config": {
     "max_words": 50000,
@@ -21,12 +21,20 @@
     "output_dir": "outputs/rnn",
     "rnn_units": 128
   },
+  "class_weights": {
+    "1": 0.31501640609920867,
+    "2": 3.389615784008307,
+    "3": 4.938275340393344,
+    "4": 3.4180104712041883,
+    "5": 0.9657396449704142
+  },
   "metrics": {
-    "accuracy": 0.15657926978681697,
-    "macro_precision": 0.3070520606084156,
-    "macro_recall": 0.23287810737133405,
-    "macro_f1": 0.1189487542067024,
-    "weighted_f1": 0.18394888421027086,
-    "rating_mae": 1.2837539818671895
+    "accuracy": 0.3393776035285469,
+    "macro_precision": 0.42542429600158177,
+    "macro_recall": 0.39104570666148797,
+    "macro_f1": 0.2718485093799134,
+    "weighted_f1": 0.4142842008468462,
+    "rating_mae": 0.8149963244302867,
+    "rating_mse": 1.0555427074432373
   }
 }
