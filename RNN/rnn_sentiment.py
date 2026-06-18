@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1] if "__file__" in globals() else Path.
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from sentiment_pipeline import base_config, env_int, run_pipeline
+from sentiment_pipeline import accuracy, base_config, env_int, run_pipeline
 
 
 def build_model(vocab_size: int, config: dict) -> Model:
@@ -32,12 +32,12 @@ def build_model(vocab_size: int, config: dict) -> Model:
     )(x)
     x = Dense(64, activation="relu", name="classifier_hidden")(x)
     x = Dropout(config["dropout_rate"], name="classifier_dropout")(x)
-    outputs = Dense(config["num_classes"], activation="softmax", name="rating")(x)
-    model = Model(inputs, outputs, name="SimpleRNN_Classifier")
+    outputs = Dense(1, activation="linear", name="rating")(x)
+    model = Model(inputs, outputs, name="SimpleRNN")
     model.compile(
         optimizer="adam",
-        loss="sparse_categorical_crossentropy",
-        metrics=["accuracy"],
+        loss="mse",
+        metrics=[accuracy, "mse"],
     )
     return model
 

@@ -1,10 +1,10 @@
 {
   "model_key": "transformer",
   "model_name": "Transformer Encoder",
-  "parameters": 3586181,
-  "epochs_trained": 6,
-  "training_seconds": 26.1655707,
-  "inference_ms_per_sample": 0.0986620681205588,
+  "parameters": 3585921,
+  "epochs_trained": 4,
+  "training_seconds": 26.37183387496043,
+  "inference_ms_per_sample": 0.14891316468401358,
   "validation_samples": 4081,
   "config": {
     "max_words": 50000,
@@ -16,7 +16,7 @@
     "epochs": 10,
     "validation_split": 0.2,
     "seed": 42,
-    "max_samples": 100000,
+    "max_samples": null,
     "use_class_weights": true,
     "output_dir": "outputs/transformer",
     "num_heads": 4,
@@ -24,11 +24,12 @@
     "transformer_blocks": 1
   },
   "metrics": {
-    "accuracy": 0.6895368782161235,
-    "macro_precision": 0.47383892088902535,
-    "macro_recall": 0.48729683261447454,
-    "macro_f1": 0.4635297506443786,
-    "weighted_f1": 0.7195305954452877,
-    "rating_mae": 0.47316834109286937
+    "accuracy": 0.170056358735604,
+    "macro_precision": 0.39591827039150346,
+    "macro_recall": 0.3407956939286561,
+    "macro_f1": 0.20636312759392111,
+    "weighted_f1": 0.16566936581688305,
+    "rating_mae": 1.2031364861553542,
+    "rating_mse": 1.9747450351715088
   }
 }
