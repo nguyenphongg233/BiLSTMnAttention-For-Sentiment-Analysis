@@ -33,10 +33,10 @@ graph TD
         I("Dense Layer (Hidden)<br>(64 Units, ReLU)")
         Drop2("Dropout (Rate = 0.3)")
         
-        J("Output Layer<br>(5 Units, Softmax)")
+        J("Regression Output<br>(1 Unit, Linear)")
     end
     
-    K("Kết quả Dự Đoán<br>(Xác suất từ 1 sao đến 5 sao)")
+    K("Kết quả Dự Đoán<br>(Rating liên tục, làm tròn về 1-5 khi đánh giá)")
 
     %% Luồng dữ liệu
     A --> B
@@ -69,5 +69,5 @@ graph TD
    - **Add & Layer Normalization**: Kỹ thuật chuẩn hóa và cộng kết nối thặng dư (residual connection) giúp mô hình huấn luyện ổn định và tránh được hiện tượng triệt tiêu đạo hàm (vanishing gradient).
 4. **Global Average Pooling 1D**: Gom đặc trưng chuỗi thành một vector duy nhất và bỏ qua các vị trí padding thông qua mask.
 5. **Dense (Lớp kết nối đầy đủ)**: Học các đặc trưng phức tạp cuối cùng từ vector trước khi phân loại thông qua hàm kích hoạt ReLU.
-6. **Output**: Gồm 5 Nơ-ron tương ứng với số sao từ 1 đến 5. Hàm kích hoạt `Softmax` đảm bảo đầu ra là một tỷ lệ phần trăm (%), phân loại có xác suất cao nhất chính là kết quả dự đoán của mô hình. 
+6. **Output**: Một nơ-ron tuyến tính dự đoán rating liên tục. Mô hình tối ưu weighted MSE; khi đánh giá classification metrics, kết quả được làm tròn và chặn về 1–5.
 7. **Dropout**: Được chèn vào giữa các lớp với tỷ lệ 30% (0.3) để tắt ngẫu nhiên các nơ-ron trong quá trình huấn luyện, nhằm tránh hiện tượng mô hình học vẹt (Overfitting).

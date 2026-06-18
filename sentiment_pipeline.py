@@ -1,4 +1,4 @@
-"""Tiện ích dùng chung cho ba pipeline sentiment classification trên Kaggle."""
+"""Tiện ích dùng chung cho ba pipeline sentiment regression trên Kaggle."""
 
 from __future__ import annotations
 
@@ -36,15 +36,28 @@ from sklearn.metrics import (
 from sklearn.model_selection import train_test_split
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.metrics import MeanAbsoluteError, MeanSquaredError, RootMeanSquaredError
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 
 
 @tf.keras.utils.register_keras_serializable(package="sentiment")
 def accuracy(y_true, y_pred):
+    """Accuracy sau khi làm tròn và chặn prediction về rating 1-5."""
     y_true = tf.reshape(y_true, [-1])
     y_pred = tf.reshape(y_pred, [-1])
-    return tf.cast(tf.abs(y_true - tf.round(y_pred)) < 1e-5, tf.float32)
+    y_pred = tf.clip_by_value(tf.round(y_pred), 1.0, 5.0)
+    return tf.cast(tf.equal(y_true, y_pred), tf.float32)
+
+
+def regression_metrics() -> list:
+    """Tạo metric instance mới cho mỗi model."""
+    return [
+        accuracy,
+        MeanSquaredError(name="mse"),
+        RootMeanSquaredError(name="rmse"),
+        MeanAbsoluteError(name="mae"),
+    ]
 
 
 DATASET_HANDLE = "dongrelaxman/amazon-reviews-dataset"
@@ -192,7 +205,7 @@ def train_model(
     batch_size: int,
     epochs: int,
     use_class_weights: bool,
-) -> tuple[tf.keras.callbacks.History, float]:
+) -> tuple[tf.keras.callbacks.History, float, dict[int, float]]:
     output_dir.mkdir(parents=True, exist_ok=True)
     callbacks = [
         EarlyStopping(
@@ -209,42 +222,77 @@ def train_model(
             verbose=1,
         ),
     ]
-    class_weight = None
+    class_weights: dict[int, float] = {}
+    train_sample_weight = None
+    val_sample_weight = None
     if use_class_weights:
         classes = np.unique(data["y_train"].astype(int))
         weights = compute_class_weight(
             class_weight="balanced", classes=classes, y=data["y_train"].astype(int)
         )
-        class_weight = dict(zip(classes.tolist(), weights.tolist()))
-        print("Class weights:", class_weight)
+        class_weights = dict(zip(classes.tolist(), weights.tolist()))
+
+        # Giới hạn tùy chọn giúp tránh gradient quá lớn nếu một lớp cực hiếm.
+        max_weight = env_float("MAX_CLASS_WEIGHT", 5.0)
+        class_weights = {
+            rating: min(float(weight), max_weight)
+            for rating, weight in class_weights.items()
+        }
+        train_sample_weight = np.asarray(
+            [class_weights[int(rating)] for rating in data["y_train"]],
+            dtype="float32",
+        )
+        val_sample_weight = np.asarray(
+            [class_weights[int(rating)] for rating in data["y_val"]],
+            dtype="float32",
+        )
+        print("Class weights dùng cho weighted MSE:")
+        for rating, weight in sorted(class_weights.items()):
+            print(f"  {rating} sao: {weight:.4f}")
+
+    validation_data = (data["x_val"], data["y_val"])
+    if val_sample_weight is not None:
+        validation_data = (data["x_val"], data["y_val"], val_sample_weight)
 
     started = time.perf_counter()
     history = model.fit(
         data["x_train"],
         data["y_train"],
-        validation_data=(data["x_val"], data["y_val"]),
+        sample_weight=train_sample_weight,
+        validation_data=validation_data,
         batch_size=batch_size,
         epochs=epochs,
         callbacks=callbacks,
-        class_weight=class_weight,
         shuffle=True,
         verbose=1,
     )
-    return history, time.perf_counter() - started
+    return history, time.perf_counter() - started, class_weights
 
 
 def plot_history(history: tf.keras.callbacks.History, model_name: str, output_dir: Path) -> None:
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    axes[0].plot(history.history["loss"], label="Train")
-    axes[0].plot(history.history["val_loss"], label="Validation")
-    axes[0].set(title="Loss", xlabel="Epoch", ylabel="Mean Squared Error")
-    axes[1].plot(history.history["accuracy"], label="Train")
-    axes[1].plot(history.history["val_accuracy"], label="Validation")
-    axes[1].set(title="Accuracy", xlabel="Epoch", ylabel="Accuracy")
-    for axis in axes:
+    metric_specs = [
+        ("loss", "Weighted MSE loss", "Loss"),
+        ("mse", "MSE", "MSE"),
+        ("rmse", "RMSE", "RMSE"),
+        ("mae", "MAE", "MAE"),
+        ("accuracy", "Rounded accuracy", "Accuracy"),
+    ]
+    fig, axes = plt.subplots(2, 3, figsize=(18, 10))
+    for axis, (key, title, ylabel) in zip(axes.flat, metric_specs):
+        if key not in history.history:
+            axis.set_visible(False)
+            continue
+        epochs = range(1, len(history.history[key]) + 1)
+        axis.plot(epochs, history.history[key], marker="o", label="Train")
+        val_key = f"val_{key}"
+        if val_key in history.history:
+            axis.plot(epochs, history.history[val_key], marker="o", label="Validation")
+        axis.set(title=title, xlabel="Epoch", ylabel=ylabel)
         axis.legend()
         axis.grid(alpha=0.25)
-    fig.suptitle(f"{model_name} - training history")
+    for axis in axes.flat[len(metric_specs):]:
+        axis.set_visible(False)
+    fig.suptitle(f"{model_name} - chỉ số qua từng epoch")
     fig.tight_layout()
     fig.savefig(output_dir / "training_history.png", dpi=160, bbox_inches="tight")
     plt.close(fig)
@@ -258,6 +306,7 @@ def evaluate_and_save(
     model_name: str,
     output_dir: Path,
     config: dict,
+    class_weights: dict[int, float],
     training_seconds: float,
     batch_size: int,
 ) -> dict:
@@ -295,6 +344,7 @@ def evaluate_and_save(
         "inference_ms_per_sample": float(inference_seconds * 1000 / len(y_true)),
         "validation_samples": int(len(y_true)),
         "config": config,
+        "class_weights": class_weights,
         "metrics": metrics,
     }
 
@@ -302,6 +352,13 @@ def evaluate_and_save(
     with (output_dir / "metrics.json").open("w", encoding="utf-8") as file:
         json.dump(summary, file, ensure_ascii=False, indent=2)
     pd.DataFrame(history.history).to_csv(output_dir / "history.csv", index_label="epoch")
+    if class_weights:
+        pd.DataFrame(
+            {
+                "rating": list(sorted(class_weights)),
+                "weight": [class_weights[rating] for rating in sorted(class_weights)],
+            }
+        ).to_csv(output_dir / "class_weights.csv", index=False)
     pd.DataFrame(report_dict).transpose().to_csv(output_dir / "classification_report.csv")
     pd.DataFrame(cm, index=CLASS_NAMES, columns=CLASS_NAMES).to_csv(
         output_dir / "confusion_matrix.csv"
@@ -363,7 +420,7 @@ def run_pipeline(
     )
     model = build_model(data["vocab_size"], config)
     model.summary()
-    history, training_seconds = train_model(
+    history, training_seconds, class_weights = train_model(
         model=model,
         data=data,
         output_dir=output_dir,
@@ -379,6 +436,7 @@ def run_pipeline(
         model_name=model_name,
         output_dir=output_dir,
         config=config,
+        class_weights=class_weights,
         training_seconds=training_seconds,
         batch_size=config["batch_size"],
     )

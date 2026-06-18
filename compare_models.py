@@ -115,21 +115,76 @@ def save_per_class_f1(run_dirs: dict[str, Path], output_dir: Path) -> None:
 
 
 def save_training_curves(run_dirs: dict[str, Path], output_dir: Path) -> None:
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    for model_key, run_dir in run_dirs.items():
-        history = pd.read_csv(run_dir / "history.csv")
-        epochs = range(1, len(history) + 1)
-        label = MODEL_LABELS[model_key]
-        axes[0].plot(epochs, history["val_loss"], marker="o", label=label)
-        axes[1].plot(epochs, history["val_accuracy"], marker="o", label=label)
-    axes[0].set(title="Validation MSE", xlabel="Epoch", ylabel="Mean Squared Error")
-    axes[1].set(title="Validation Accuracy", xlabel="Epoch", ylabel="Accuracy")
-    for axis in axes:
-        axis.legend()
+    metric_specs = [
+        ("val_loss", "Validation weighted MSE loss", "Loss"),
+        ("val_mse", "Validation MSE", "MSE"),
+        ("val_rmse", "Validation RMSE", "RMSE"),
+        ("val_mae", "Validation MAE", "MAE"),
+        ("val_accuracy", "Validation rounded accuracy", "Accuracy"),
+    ]
+    histories = {
+        model_key: pd.read_csv(run_dir / "history.csv")
+        for model_key, run_dir in run_dirs.items()
+    }
+    fig, axes = plt.subplots(2, 3, figsize=(18, 10))
+    for axis, (column, title, ylabel) in zip(axes.flat, metric_specs):
+        plotted = False
+        for model_key, history in histories.items():
+            if column not in history:
+                continue
+            epochs = range(1, len(history) + 1)
+            axis.plot(
+                epochs,
+                history[column],
+                marker="o",
+                label=MODEL_LABELS[model_key],
+            )
+            plotted = True
+        axis.set(title=title, xlabel="Epoch", ylabel=ylabel)
+        if plotted:
+            axis.legend()
         axis.grid(alpha=0.25)
+    for axis in axes.flat[len(metric_specs):]:
+        axis.set_visible(False)
     fig.tight_layout()
     fig.savefig(output_dir / "validation_curves.png", dpi=180, bbox_inches="tight")
     plt.close(fig)
+
+
+def save_class_weight_chart(run_dirs: dict[str, Path], output_dir: Path) -> None:
+    # Cả ba model dùng cùng split nên class weights giống nhau.
+    for run_dir in run_dirs.values():
+        path = run_dir / "class_weights.csv"
+        if not path.exists():
+            continue
+        weights = pd.read_csv(path)
+        fig, axis = plt.subplots(figsize=(8, 5))
+        sns.barplot(
+            data=weights,
+            x="rating",
+            y="weight",
+            hue="rating",
+            legend=False,
+            ax=axis,
+        )
+        axis.axhline(
+            1.0,
+            color="black",
+            linestyle="--",
+            linewidth=1,
+            label="Trọng số chuẩn",
+        )
+        axis.set(
+            title="Class weights dùng trong weighted MSE",
+            xlabel="Rating",
+            ylabel="Weight",
+        )
+        axis.legend()
+        axis.grid(axis="y", alpha=0.25)
+        fig.tight_layout()
+        fig.savefig(output_dir / "class_weights.png", dpi=180, bbox_inches="tight")
+        plt.close(fig)
+        return
 
 
 def save_markdown(results: pd.DataFrame, output_dir: Path) -> None:
@@ -175,6 +230,7 @@ def main() -> None:
     save_resource_chart(results, args.comparison_dir)
     save_per_class_f1(run_dirs, args.comparison_dir)
     save_training_curves(run_dirs, args.comparison_dir)
+    save_class_weight_chart(run_dirs, args.comparison_dir)
     save_markdown(results, args.comparison_dir)
     print(results.drop(columns=["model_key"]).to_string(index=False))
     print(f"Đã lưu báo cáo tại {args.comparison_dir.resolve()}")

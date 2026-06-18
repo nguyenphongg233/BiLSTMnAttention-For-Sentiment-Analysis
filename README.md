@@ -1,6 +1,7 @@
-# Amazon Reviews Sentiment Analysis: RNN vs BiLSTM + Attention vs Transformer
+# Amazon Reviews Rating Regression: RNN vs BiLSTM + Attention vs Transformer
 
-Dự án phân loại Amazon Reviews thành 5 mức rating (1–5 sao) bằng ba kiến trúc:
+Dự án dự đoán rating Amazon Reviews trên thang liên tục 1–5, sau đó làm tròn để
+đánh giá theo 5 mức sao, bằng ba kiến trúc:
 
 - `SimpleRNN`: baseline recurrent một chiều.
 - `BiLSTM + Attention`: mô hình chính trong proposal.
@@ -47,7 +48,8 @@ Các biến cấu hình phổ biến:
 | `BATCH_SIZE` | 128 | Batch size |
 | `EPOCHS` | 10 | Epoch tối đa |
 | `MAX_SAMPLES` | toàn bộ | Giới hạn mẫu để thử nhanh |
-| `USE_CLASS_WEIGHTS` | 1 | Cân bằng loss theo lớp |
+| `USE_CLASS_WEIGHTS` | 1 | Bật weighted MSE theo rating |
+| `MAX_CLASS_WEIGHT` | 5.0 | Chặn trọng số cực lớn của lớp hiếm |
 
 ## Output
 
@@ -62,15 +64,14 @@ outputs/
 ```
 
 `compare_models.py` chỉ chạy sau khi có `metrics.json` của đủ ba model. Script
-tạo bảng so sánh, Macro F1 theo lớp, validation curves và biểu đồ chi phí tính
-toán. Không có số liệu kết quả giả định được hard-code trong repository.
+tạo bảng so sánh, Macro F1 theo lớp, class weights, validation curves của
+weighted loss/MSE/RMSE/MAE/rounded accuracy và biểu đồ chi phí tính toán.
 
 ## Kiểm tra proposal
 
-BiLSTM + Attention hiện khớp pipeline được mô tả trong `NMAI_proposal.md`:
-Embedding → BiLSTM hai chiều → Attention → Dense → Softmax 5 lớp; train bằng
-Adam/cross-entropy, có shuffle, EarlyStopping và đánh giá precision/recall/F1,
-accuracy, confusion matrix.
+Kiến trúc trích xuất đặc trưng của BiLSTM + Attention vẫn khớp proposal:
+Embedding → BiLSTM hai chiều → Attention → Dense. Head đã được đổi từ Softmax
+5 lớp sang một đầu ra tuyến tính để làm regression, tối ưu bằng weighted MSE.
 
 Hai lỗi kỹ thuật của phiên bản cũ đã được sửa:
 

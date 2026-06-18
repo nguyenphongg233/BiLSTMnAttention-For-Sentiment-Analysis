@@ -29,10 +29,10 @@ graph TD
         F("Dense Layer (Hidden)<br>(64 Units, ReLU)")
         Drop3("Dropout (Rate = 0.3)")
         
-        G("Output Layer<br>(5 Units, Softmax)")
+        G("Regression Output<br>(1 Unit, Linear)")
     end
     
-    H("Kết quả Dự Đoán<br>(Xác suất từ 1 sao đến 5 sao)")
+    H("Kết quả Dự Đoán<br>(Rating liên tục, làm tròn về 1-5 khi đánh giá)")
 
     %% Luồng dữ liệu
     A --> B
@@ -60,5 +60,5 @@ graph TD
 3. **BiLSTM (Bidirectional LSTM)**: Đây là lớp LSTM đọc 2 chiều. Nó sẽ đọc câu văn từ trái sang phải, và đồng thời đọc ngược từ phải sang trái để thấu hiểu toàn bộ ngữ cảnh của câu. Nó cung cấp Output cho từng từ trong câu.
 4. **Attention Mechanism (Cơ chế tập trung)**: Attention gán trọng số cho từng từ rồi nén chuỗi thành context vector. Padding mask được áp dụng trước softmax, nên các token đệm không nhận trọng số attention.
 5. **Dense (Lớp kết nối đầy đủ)**: Học các đặc trưng phức tạp từ vector do Attention tạo ra thông qua hàm kích hoạt ReLU.
-6. **Output**: Gồm 5 Nơ-ron tương ứng với số sao từ 1 đến 5. Hàm kích hoạt `Softmax` đảm bảo đầu ra là một tỷ lệ phần trăm (%), phân loại có xác suất cao nhất chính là kết quả dự đoán của mô hình. 
+6. **Output**: Một nơ-ron tuyến tính dự đoán rating liên tục. Mô hình tối ưu weighted MSE; khi đánh giá classification metrics, kết quả được làm tròn và chặn về 1–5.
 7. **Dropout**: Được chèn vào giữa các lớp với tỷ lệ 30% (0.3) để tắt ngẫu nhiên các nơ-ron trong quá trình huấn luyện, nhằm tránh hiện tượng mô hình học vẹt (Overfitting).

@@ -1,9 +1,9 @@
-# Chi tiết implementation: RNN, BiLSTM + Attention và Transformer
+# Chi tiết implementation regression: RNN, BiLSTM + Attention và Transformer
 
 ## 1. Mục tiêu và thiết lập chung
 
-Ba mô hình giải cùng một bài toán phân loại Amazon Reviews thành 5 lớp tương ứng
-rating 1–5 sao. Để phép so sánh có ý nghĩa, cả ba dùng chung:
+Ba mô hình dự đoán trực tiếp rating liên tục của Amazon Reviews. Khi đánh giá
+theo lớp, prediction được làm tròn và chặn trong khoảng 1–5.
 
 - Hàm làm sạch: lowercase, bỏ HTML, ký tự ngoài chữ/số và khoảng trắng thừa.
 - Split phân tầng 80% train, 20% validation với seed 42.
@@ -11,20 +11,22 @@ rating 1–5 sao. Để phép so sánh có ý nghĩa, cả ba dùng chung:
   data leakage.
 - Chuỗi dài tối đa 200 token, post-padding và post-truncation.
 - Embedding học từ đầu, 128 chiều; token `0` là padding và được mask.
-- Output 5 nút Softmax; loss `sparse_categorical_crossentropy`; optimizer Adam.
+- Output một nút linear; loss weighted MSE; optimizer Adam.
 - Batch size 128, tối đa 10 epoch, EarlyStopping patience 3,
   ReduceLROnPlateau patience 2.
-- Class weight cân bằng mặc định do phân bố rating thường lệch. Có thể tắt bằng
-  `USE_CLASS_WEIGHTS=0`.
-- Metrics: accuracy, macro precision/recall/F1, weighted F1, rating MAE,
-  confusion matrix, F1 từng lớp, số tham số và thời gian chạy.
+- Trọng số cân bằng được tính trên train theo
+  `w_c = N / (K × n_c)`, rồi ánh xạ thành `sample_weight` cho từng review.
+  Do đó loss thực tế là `mean(w_y × (y - ŷ)²)`. Có thể tắt bằng
+  `USE_CLASS_WEIGHTS=0` hoặc đổi ngưỡng chặn bằng `MAX_CLASS_WEIGHT`.
+- Metrics theo epoch: weighted loss, MSE, RMSE, MAE và rounded accuracy.
+  Báo cáo cuối còn có macro precision/recall/F1, weighted F1 và confusion matrix.
 
 Các giá trị có thể đổi bằng biến môi trường như `MAX_WORDS`, `MAX_LEN`,
 `BATCH_SIZE`, `EPOCHS`, `MAX_SAMPLES` và `OUTPUT_DIR`.
 
 ## 2. SimpleRNN
 
-Luồng: `Embedding → Dropout → SimpleRNN(128) → Dense(64) → Dropout → Softmax(5)`.
+Luồng: `Embedding → Dropout → SimpleRNN(128) → Dense(64) → Dropout → Linear(1)`.
 
 SimpleRNN là baseline tuần tự và một chiều. Hidden state được cập nhật theo từng
 token, nên kiến trúc gọn nhưng dễ gặp vanishing gradient khi phụ thuộc ngữ cảnh
@@ -41,7 +43,7 @@ Tham số riêng mặc định:
 ## 3. BiLSTM + Attention
 
 Luồng:
-`Embedding → Dropout → Bidirectional LSTM(128 mỗi chiều) → Dropout → additive attention → Dense(64) → Dropout → Softmax(5)`.
+`Embedding → Dropout → Bidirectional LSTM(128 mỗi chiều) → Dropout → additive attention → Dense(64) → Dropout → Linear(1)`.
 
 BiLSTM tạo hidden state từ cả chiều thuận và nghịch. Additive attention học một
 score cho mỗi timestep, softmax các score rồi lấy tổng có trọng số. Mask được áp
@@ -49,8 +51,8 @@ vào score trước softmax, vì vậy các vị trí padding không đóng góp
 vector. Đây là phần đã được chỉnh so với implementation ban đầu.
 
 Kiến trúc này phù hợp với proposal: có Embedding, BiLSTM, attention tổng hợp ngữ
-cảnh, Dense và Softmax 5 lớp; đồng thời có shuffle, EarlyStopping và các metrics
-được yêu cầu.
+cảnh và Dense như proposal; chỉ classification head được thay bằng regression
+head theo hướng tiếp cận mới.
 
 | Tham số | Giá trị |
 |---|---:|
@@ -62,7 +64,7 @@ cảnh, Dense và Softmax 5 lớp; đồng thời có shuffle, EarlyStopping và
 ## 4. Transformer encoder
 
 Luồng:
-`Token + learned positional embedding → Transformer encoder block → masked global average pooling → Dense(64) → Softmax(5)`.
+`Token + learned positional embedding → Transformer encoder block → masked global average pooling → Dense(64) → Linear(1)`.
 
 Encoder block gồm multi-head self-attention, residual connection + layer
 normalization, feed-forward network, residual connection + layer normalization.
@@ -81,7 +83,7 @@ và pooling, tránh để các token `0` làm nhiễu biểu diễn câu.
 | Dropout | 0.3 |
 
 Đây là Transformer encoder huấn luyện từ đầu, không phải mô hình pretrained như
-BERT. Nó là cách áp dụng Transformer hợp lệ cho bài toán classification, nhưng
+BERT. Nó là cách áp dụng Transformer hợp lệ cho bài toán regression, nhưng
 thường cần nhiều dữ liệu hơn recurrent model để học embedding/ngữ cảnh tốt.
 
 ## 5. So sánh định tính

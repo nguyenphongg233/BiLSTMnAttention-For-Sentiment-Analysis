@@ -8,9 +8,9 @@ flowchart LR
     D --> E[SimpleRNN, 128 units]
     E --> F[Dense, 64, ReLU]
     F --> G[Dropout, 0.3]
-    G --> H[Dense, 5, Softmax]
+    G --> H[Dense, 1, Linear]
 ```
 
-SimpleRNN là baseline tuần tự cơ bản. `mask_zero=True` giúp lớp RNN bỏ qua token
-padding. Mô hình ít phức tạp hơn BiLSTM + Attention và Transformer, nhưng thường
-khó giữ thông tin dài hạn do vanishing gradient.
+SimpleRNN là baseline regression tuần tự cơ bản. `mask_zero=True` giúp lớp RNN
+bỏ qua token padding. Đầu ra liên tục được tối ưu bằng weighted MSE, sau đó làm
+tròn và chặn về 1–5 khi tính metric theo lớp.

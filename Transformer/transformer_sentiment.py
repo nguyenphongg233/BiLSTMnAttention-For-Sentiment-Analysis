@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1] if "__file__" in globals() else Path.
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from sentiment_pipeline import accuracy, base_config, env_int, run_pipeline
+from sentiment_pipeline import base_config, env_int, regression_metrics, run_pipeline
 
 
 @tf.keras.utils.register_keras_serializable(package="sentiment")
@@ -136,7 +136,7 @@ def build_model(vocab_size: int, config: dict) -> Model:
     model.compile(
         optimizer="adam",
         loss="mse",
-        metrics=[accuracy, "mse"],
+        metrics=regression_metrics(),
     )
     return model
 
