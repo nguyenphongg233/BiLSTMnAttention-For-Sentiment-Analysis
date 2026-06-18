@@ -1,10 +1,10 @@
 # Kết quả so sánh thực nghiệm
 
-| Model               |   Accuracy |   Macro Precision |   Macro Recall |   Macro F1 |   Weighted F1 |   Rating MAE |   Rating MSE |   Parameters |   Epochs |   Training seconds |   Inference ms/sample |
-|:--------------------|-----------:|------------------:|---------------:|-----------:|--------------:|-------------:|-------------:|-------------:|---------:|-------------------:|----------------------:|
-| SimpleRNN           |     0.1566 |            0.3071 |         0.2329 |     0.1189 |        0.1839 |       1.2838 |       0      |    3,460,997 |        4 |              133.8 |                0.3691 |
-| BiLSTM + Attention  |     0.4876 |            0.437  |         0.4263 |     0.3478 |        0.5682 |       0.6525 |       0.9816 |    3,765,249 |        7 |              148.5 |                0.5718 |
-| Transformer Encoder |     0.1701 |            0.3959 |         0.3408 |     0.2064 |        0.1657 |       1.2031 |       1.9747 |    3,585,921 |        4 |               26.4 |                0.1489 |
+| Model               |   Accuracy |   Macro Precision |   Macro Recall |   Macro F1 |   Weighted F1 |   Rating MAE |   Parameters |   Epochs |   Training seconds |   Inference ms/sample |
+|:--------------------|-----------:|------------------:|---------------:|-----------:|--------------:|-------------:|-------------:|---------:|-------------------:|----------------------:|
+| SimpleRNN           |     0.6481 |            0.2492 |         0.2145 |     0.1845 |        0.5274 |       1.0831 |    3,460,997 |       10 |              174.2 |                0.9883 |
+| BiLSTM + Attention  |     0.8155 |            0.4793 |         0.4015 |     0.3908 |        0.7583 |       0.3399 |    3,765,509 |        5 |              102.8 |                0.5403 |
+| Transformer Encoder |     0.7991 |            0.478  |         0.3816 |     0.346  |        0.7364 |       0.3999 |    3,586,181 |        4 |               27.3 |                0.1372 |
 
 - Macro F1 cao nhất: **BiLSTM + Attention**.
 - Inference nhanh nhất trong lần chạy này: **Transformer Encoder**.

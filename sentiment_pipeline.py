@@ -40,11 +40,7 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 
 
-@tf.keras.utils.register_keras_serializable(package="sentiment")
-def accuracy(y_true, y_pred):
-    y_true = tf.reshape(y_true, [-1])
-    y_pred = tf.reshape(y_pred, [-1])
-    return tf.cast(tf.abs(y_true - tf.round(y_pred)) < 1e-5, tf.float32)
+
 
 
 DATASET_HANDLE = "dongrelaxman/amazon-reviews-dataset"
@@ -148,7 +144,7 @@ def prepare_data(
     max_samples: int | None = None,
 ) -> dict:
     df = load_dataframe(max_samples=max_samples, seed=seed)
-    labels = df["rating"].to_numpy(dtype="float32")
+    labels = df["rating"].to_numpy(dtype="int32") - 1
 
     # Chia trước rồi mới fit tokenizer: validation không được làm lộ vocabulary.
     train_texts, val_texts, y_train, y_val = train_test_split(
@@ -237,7 +233,7 @@ def plot_history(history: tf.keras.callbacks.History, model_name: str, output_di
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     axes[0].plot(history.history["loss"], label="Train")
     axes[0].plot(history.history["val_loss"], label="Validation")
-    axes[0].set(title="Loss", xlabel="Epoch", ylabel="Mean Squared Error")
+    axes[0].set(title="Loss", xlabel="Epoch", ylabel="Loss")
     axes[1].plot(history.history["accuracy"], label="Train")
     axes[1].plot(history.history["val_accuracy"], label="Validation")
     axes[1].set(title="Accuracy", xlabel="Epoch", ylabel="Accuracy")
@@ -264,9 +260,8 @@ def evaluate_and_save(
     started = time.perf_counter()
     predictions = model.predict(data["x_val"], batch_size=batch_size, verbose=1)
     inference_seconds = time.perf_counter() - started
-    y_pred_raw = predictions.flatten()
-    y_pred = np.clip(np.round(y_pred_raw), 1, 5).astype(int) - 1
-    y_true = data["y_val"].astype(int) - 1
+    y_pred = np.argmax(predictions, axis=1)
+    y_true = data["y_val"]
 
     report_dict = classification_report(
         y_true,
@@ -284,7 +279,6 @@ def evaluate_and_save(
         "macro_f1": float(f1_score(y_true, y_pred, average="macro", zero_division=0)),
         "weighted_f1": float(f1_score(y_true, y_pred, average="weighted", zero_division=0)),
         "rating_mae": float(mean_absolute_error(y_true + 1, y_pred + 1)),
-        "rating_mse": float(mean_squared_error(data["y_val"], y_pred_raw)),
     }
     summary = {
         "model_key": model_key,
@@ -310,7 +304,6 @@ def evaluate_and_save(
         {
             "true_rating": y_true + 1,
             "predicted_rating": y_pred + 1,
-            "predicted_value": y_pred_raw,
         }
     ).to_csv(output_dir / "predictions.csv", index=False)
 

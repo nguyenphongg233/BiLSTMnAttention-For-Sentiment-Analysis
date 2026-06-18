@@ -44,7 +44,6 @@ def load_runs(outputs_dir: Path) -> tuple[pd.DataFrame, dict[str, Path]]:
                 "Macro F1": run["metrics"]["macro_f1"],
                 "Weighted F1": run["metrics"]["weighted_f1"],
                 "Rating MAE": run["metrics"]["rating_mae"],
-                "Rating MSE": run["metrics"].get("rating_mse", 0.0),
                 "Parameters": run["parameters"],
                 "Epochs": run["epochs_trained"],
                 "Training seconds": run["training_seconds"],
@@ -122,8 +121,8 @@ def save_training_curves(run_dirs: dict[str, Path], output_dir: Path) -> None:
         label = MODEL_LABELS[model_key]
         axes[0].plot(epochs, history["val_loss"], marker="o", label=label)
         axes[1].plot(epochs, history["val_accuracy"], marker="o", label=label)
-    axes[0].set(title="Validation MSE", xlabel="Epoch", ylabel="Mean Squared Error")
-    axes[1].set(title="Validation Accuracy", xlabel="Epoch", ylabel="Accuracy")
+    axes[0].set(title="Validation loss", xlabel="Epoch", ylabel="Loss")
+    axes[1].set(title="Validation accuracy", xlabel="Epoch", ylabel="Accuracy")
     for axis in axes:
         axis.legend()
         axis.grid(alpha=0.25)
@@ -137,7 +136,6 @@ def save_markdown(results: pd.DataFrame, output_dir: Path) -> None:
     for column in ["Accuracy", "Macro Precision", "Macro Recall", "Macro F1", "Weighted F1"]:
         display[column] = display[column].map(lambda value: f"{value:.4f}")
     display["Rating MAE"] = display["Rating MAE"].map(lambda value: f"{value:.4f}")
-    display["Rating MSE"] = display["Rating MSE"].map(lambda value: f"{value:.4f}")
     display["Parameters"] = display["Parameters"].map(lambda value: f"{value:,}")
     display["Training seconds"] = display["Training seconds"].map(lambda value: f"{value:.1f}")
     display["Inference ms/sample"] = display["Inference ms/sample"].map(

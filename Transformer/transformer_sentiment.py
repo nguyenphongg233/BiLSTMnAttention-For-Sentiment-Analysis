@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1] if "__file__" in globals() else Path.
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from sentiment_pipeline import accuracy, base_config, env_int, run_pipeline
+from sentiment_pipeline import base_config, env_int, run_pipeline
 
 
 @tf.keras.utils.register_keras_serializable(package="sentiment")
@@ -131,12 +131,12 @@ def build_model(vocab_size: int, config: dict) -> Model:
     x = Dropout(config["dropout_rate"])(x)
     x = Dense(64, activation="relu")(x)
     x = Dropout(config["dropout_rate"])(x)
-    outputs = Dense(1, activation="linear", name="rating")(x)
+    outputs = Dense(config["num_classes"], activation="softmax", name="rating")(x)
     model = Model(inputs, outputs, name="Transformer_Encoder_Classifier")
     model.compile(
         optimizer="adam",
-        loss="mse",
-        metrics=[accuracy, "mse"],
+        loss="sparse_categorical_crossentropy",
+        metrics=["accuracy"],
     )
     return model
 
