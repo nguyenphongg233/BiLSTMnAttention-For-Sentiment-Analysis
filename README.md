@@ -23,6 +23,7 @@ python "RNN/rnn_sentiment.py"
 python "BiLSTM +  Attention/BiLSTM_Attention.py"
 python "Transformer/transformer_sentiment.py"
 python compare_models.py
+python demo_models.py
 ```
 
 Pipeline tự tìm `Amazon_Reviews.csv` trong `/kaggle/input`. Nếu file ở nơi khác:
@@ -64,6 +65,35 @@ outputs/
 `compare_models.py` chỉ chạy sau khi có `metrics.json` của đủ ba model. Script
 tạo bảng so sánh, Macro F1 theo lớp, validation curves và biểu đồ chi phí tính
 toán. Không có số liệu kết quả giả định được hard-code trong repository.
+
+Sau mỗi epoch, pipeline còn tính và lưu các validation metric: Macro Precision,
+Macro Recall, Macro F1, Weighted F1 và Rating MAE. Mỗi thư mục model có:
+
+- `history.csv`: toàn bộ chỉ số theo epoch;
+- `training_history.png` và `epoch_metrics.png`: graph chỉ số theo epoch;
+- `confusion_matrix.png`: confusion matrix sau khi train.
+
+`compare_models.py` tạo thêm `epoch_metrics_comparison.png` để đặt đường metric
+theo epoch của cả ba model trên cùng biểu đồ.
+
+## Demo dự đoán
+
+Sau khi đã train đủ ba model, chạy nhóm review mẫu mặc định:
+
+```bash
+python demo_models.py
+```
+
+Hoặc truyền review riêng (có thể lặp lại `--text`):
+
+```bash
+python demo_models.py \
+  --text "This product is excellent and works perfectly." \
+  --text "It stopped working after two days."
+```
+
+Script in validation metrics đã lưu của từng model, giá trị rating thô, rating
+1–5 sao sau khi làm tròn, và sai số tuyệt đối đối với các sample mặc định.
 
 ## Kiểm tra proposal
 

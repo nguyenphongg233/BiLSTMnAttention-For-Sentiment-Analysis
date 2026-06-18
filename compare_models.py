@@ -115,20 +115,37 @@ def save_per_class_f1(run_dirs: dict[str, Path], output_dir: Path) -> None:
 
 
 def save_training_curves(run_dirs: dict[str, Path], output_dir: Path) -> None:
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    charts = [
+        ("val_loss", "Validation MSE", "MSE"),
+        ("val_accuracy", "Validation Accuracy", "Score"),
+        ("val_macro_precision", "Validation Macro Precision", "Score"),
+        ("val_macro_recall", "Validation Macro Recall", "Score"),
+        ("val_macro_f1", "Validation Macro F1", "Score"),
+        ("val_rating_mae", "Validation Rating MAE", "Số sao"),
+    ]
+    fig, axes = plt.subplots(2, 3, figsize=(18, 10))
     for model_key, run_dir in run_dirs.items():
         history = pd.read_csv(run_dir / "history.csv")
         epochs = range(1, len(history) + 1)
         label = MODEL_LABELS[model_key]
-        axes[0].plot(epochs, history["val_loss"], marker="o", label=label)
-        axes[1].plot(epochs, history["val_accuracy"], marker="o", label=label)
-    axes[0].set(title="Validation MSE", xlabel="Epoch", ylabel="Mean Squared Error")
-    axes[1].set(title="Validation Accuracy", xlabel="Epoch", ylabel="Accuracy")
-    for axis in axes:
-        axis.legend()
+        for axis, (column, _, _) in zip(axes.flat, charts):
+            if column in history:
+                axis.plot(epochs, history[column], marker="o", label=label)
+    for axis, (column, title, ylabel) in zip(axes.flat, charts):
+        axis.set(title=title, xlabel="Epoch", ylabel=ylabel)
+        if column in {
+            "val_accuracy",
+            "val_macro_precision",
+            "val_macro_recall",
+            "val_macro_f1",
+        }:
+            axis.set_ylim(0, 1)
+        if axis.lines:
+            axis.legend()
         axis.grid(alpha=0.25)
     fig.tight_layout()
     fig.savefig(output_dir / "validation_curves.png", dpi=180, bbox_inches="tight")
+    fig.savefig(output_dir / "epoch_metrics_comparison.png", dpi=180, bbox_inches="tight")
     plt.close(fig)
 
 

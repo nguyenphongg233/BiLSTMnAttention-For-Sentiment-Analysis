@@ -35,7 +35,7 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import train_test_split
 from sklearn.utils.class_weight import compute_class_weight
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.callbacks import Callback, EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 
@@ -49,6 +49,63 @@ def accuracy(y_true, y_pred):
 
 DATASET_HANDLE = "dongrelaxman/amazon-reviews-dataset"
 CLASS_NAMES = ["1 sao", "2 sao", "3 sao", "4 sao", "5 sao"]
+
+
+class ValidationMetrics(Callback):
+    """Tính các classification metric trên validation set sau mỗi epoch."""
+
+    def __init__(self, x_val: np.ndarray, y_val: np.ndarray, batch_size: int):
+        super().__init__()
+        self.x_val = x_val
+        self.y_true = y_val.astype(int) - 1
+        self.batch_size = batch_size
+
+    def on_epoch_end(self, epoch, logs=None):
+        if logs is None:
+            logs = {}
+        raw_predictions = self.model.predict(
+            self.x_val,
+            batch_size=self.batch_size,
+            verbose=0,
+        ).reshape(-1)
+        y_pred = np.clip(np.round(raw_predictions), 1, 5).astype(int) - 1
+        logs.update(
+            {
+                "val_macro_precision": float(
+                    precision_score(
+                        self.y_true, y_pred, average="macro", zero_division=0
+                    )
+                ),
+                "val_macro_recall": float(
+                    recall_score(
+                        self.y_true, y_pred, average="macro", zero_division=0
+                    )
+                ),
+                "val_macro_f1": float(
+                    f1_score(self.y_true, y_pred, average="macro", zero_division=0)
+                ),
+                "val_weighted_f1": float(
+                    f1_score(
+                        self.y_true, y_pred, average="weighted", zero_division=0
+                    )
+                ),
+                "val_rating_mae": float(
+                    mean_absolute_error(self.y_true + 1, y_pred + 1)
+                ),
+            }
+        )
+        print(
+            " — val_macro_precision: "
+            f"{logs['val_macro_precision']:.4f}"
+            " — val_macro_recall: "
+            f"{logs['val_macro_recall']:.4f}"
+            " — val_macro_f1: "
+            f"{logs['val_macro_f1']:.4f}"
+            " — val_weighted_f1: "
+            f"{logs['val_weighted_f1']:.4f}"
+            " — val_rating_mae: "
+            f"{logs['val_rating_mae']:.4f}"
+        )
 
 
 def env_int(name: str, default: int) -> int:
@@ -195,6 +252,11 @@ def train_model(
 ) -> tuple[tf.keras.callbacks.History, float]:
     output_dir.mkdir(parents=True, exist_ok=True)
     callbacks = [
+        ValidationMetrics(
+            x_val=data["x_val"],
+            y_val=data["y_val"],
+            batch_size=batch_size,
+        ),
         EarlyStopping(
             monitor="val_loss",
             patience=3,
@@ -234,19 +296,65 @@ def train_model(
 
 
 def plot_history(history: tf.keras.callbacks.History, model_name: str, output_dir: Path) -> None:
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    axes[0].plot(history.history["loss"], label="Train")
-    axes[0].plot(history.history["val_loss"], label="Validation")
-    axes[0].set(title="Loss", xlabel="Epoch", ylabel="Mean Squared Error")
-    axes[1].plot(history.history["accuracy"], label="Train")
-    axes[1].plot(history.history["val_accuracy"], label="Validation")
-    axes[1].set(title="Accuracy", xlabel="Epoch", ylabel="Accuracy")
-    for axis in axes:
-        axis.legend()
+    values = history.history
+    epochs = np.arange(1, len(values["loss"]) + 1)
+    fig, axes = plt.subplots(2, 3, figsize=(18, 10))
+
+    axes[0, 0].plot(epochs, values["loss"], marker="o", label="Train")
+    axes[0, 0].plot(epochs, values["val_loss"], marker="o", label="Validation")
+    axes[0, 0].set(title="Loss (MSE)", xlabel="Epoch", ylabel="MSE")
+
+    axes[0, 1].plot(epochs, values["accuracy"], marker="o", label="Train")
+    axes[0, 1].plot(epochs, values["val_accuracy"], marker="o", label="Validation")
+    axes[0, 1].set(title="Accuracy", xlabel="Epoch", ylabel="Score", ylim=(0, 1))
+
+    for key, label in [
+        ("val_macro_precision", "Macro Precision"),
+        ("val_macro_recall", "Macro Recall"),
+    ]:
+        if key in values:
+            axes[0, 2].plot(epochs, values[key], marker="o", label=label)
+    axes[0, 2].set(
+        title="Validation Precision & Recall",
+        xlabel="Epoch",
+        ylabel="Score",
+        ylim=(0, 1),
+    )
+
+    for key, label in [
+        ("val_macro_f1", "Macro F1"),
+        ("val_weighted_f1", "Weighted F1"),
+    ]:
+        if key in values:
+            axes[1, 0].plot(epochs, values[key], marker="o", label=label)
+    axes[1, 0].set(
+        title="Validation F1-score",
+        xlabel="Epoch",
+        ylabel="Score",
+        ylim=(0, 1),
+    )
+
+    if "val_rating_mae" in values:
+        axes[1, 1].plot(
+            epochs, values["val_rating_mae"], marker="o", label="Validation MAE"
+        )
+    axes[1, 1].set(title="Rating MAE", xlabel="Epoch", ylabel="Số sao")
+
+    learning_rate_key = "learning_rate" if "learning_rate" in values else "lr"
+    if learning_rate_key in values:
+        axes[1, 2].plot(
+            epochs, values[learning_rate_key], marker="o", label="Learning rate"
+        )
+    axes[1, 2].set(title="Learning rate", xlabel="Epoch", ylabel="Learning rate")
+
+    for axis in axes.flat:
+        if axis.lines:
+            axis.legend()
         axis.grid(alpha=0.25)
-    fig.suptitle(f"{model_name} - training history")
-    fig.tight_layout()
-    fig.savefig(output_dir / "training_history.png", dpi=160, bbox_inches="tight")
+    fig.suptitle(f"{model_name} - metrics theo từng epoch", fontsize=16)
+    fig.tight_layout(rect=(0, 0, 1, 0.97))
+    fig.savefig(output_dir / "training_history.png", dpi=180, bbox_inches="tight")
+    fig.savefig(output_dir / "epoch_metrics.png", dpi=180, bbox_inches="tight")
     plt.close(fig)
 
 
