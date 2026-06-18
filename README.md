@@ -1,49 +1,81 @@
-# Sentiment Analysis on Amazon Reviews: BiLSTM + Attention vs Transformer
+# Amazon Reviews Sentiment Analysis: RNN vs BiLSTM + Attention vs Transformer
 
-Dự án Mini Project môn học Nhập môn AI (IT3160).
-Mục tiêu của dự án là xây dựng, đánh giá và so sánh hai kiến trúc Deep Learning phổ biến trong xử lý ngôn ngữ tự nhiên (NLP) là **BiLSTM kết hợp Attention** và **Transformer** cho bài toán phân tích cảm xúc (Sentiment Analysis) trên tập dữ liệu Amazon Reviews (phân loại 1-5 sao).
+Dự án phân loại Amazon Reviews thành 5 mức rating (1–5 sao) bằng ba kiến trúc:
 
-## 🧠 Kiến trúc Mô Hình
+- `SimpleRNN`: baseline recurrent một chiều.
+- `BiLSTM + Attention`: mô hình chính trong proposal.
+- `Transformer Encoder`: self-attention huấn luyện từ đầu.
 
-Dự án triển khai hai mô hình độc lập:
+Chi tiết tham số, kỹ thuật và phân tích ưu/nhược điểm nằm trong
+[IMPLEMENTATION_DETAILS.md](IMPLEMENTATION_DETAILS.md).
 
-### 1. BiLSTM + Attention
-- **File chạy**: `sentiment_analysis.py`
-- **Kiến trúc chi tiết**: Xem [Architecture.md](Architecture.md)
-- **Đặc điểm**:
-  - Dữ liệu đi qua lớp Embedding.
-  - Sử dụng mạng LSTM hai chiều (Bidirectional LSTM) để học ngữ cảnh từ cả quá khứ và tương lai của chuỗi văn bản.
-  - Cơ chế **Custom Attention** được áp dụng để gán trọng số lớn hơn cho những từ đóng vai trò quan trọng trong việc quyết định cảm xúc của câu (ví dụ: "tuyệt vời", "tệ hại").
+## Chạy trên Kaggle
 
-### 2. Transformer
-- **File chạy**: `transformer_sentiment.py`
-- **Kiến trúc chi tiết**: Xem [Transformer_Architecture.md](Transformer_Architecture.md)
-- **Đặc điểm**:
-  - Sử dụng kiến trúc cốt lõi của Transformer thay thế cho kiến trúc RNN truyền thống.
-  - Áp dụng **Positional Embedding** song song với Word Embedding vì Transformer xử lý toàn bộ chuỗi cùng một lúc chứ không tuần tự.
-  - Sử dụng khối **Transformer Block** với **Multi-Head Attention** (4 heads), giúp mô hình tập trung vào nhiều phần khác nhau của câu đồng thời.
-
-## ⚖️ So sánh: BiLSTM+Attention vs Transformer
-
-| Tiêu chí | BiLSTM + Attention | Transformer |
-| :--- | :--- | :--- |
-| **Cách xử lý dữ liệu** | Tuần tự (Sequential). Đọc từng từ một từ trái qua phải và ngược lại. | Song song (Parallel). Xử lý toàn bộ các từ trong câu cùng lúc. |
-| **Cơ chế Attention** | Dùng Custom Attention 1 chiều để tóm tắt ngữ cảnh. | Dùng Multi-Head Self-Attention để tự học mối quan hệ của tất cả các cặp từ. |
-| **Khả năng nắm bắt văn bản dài** | Gặp khó khăn khi chuỗi quá dài (dù có LSTM và Attention nhưng vẫn có hiện tượng thắt nút cổ chai). | Rất tốt trong việc nắm bắt ngữ cảnh ở xa nhau nhờ Self-Attention. |
-| **Tốc độ huấn luyện** | Chậm hơn (do xử lý tuần tự nên khó tối ưu hóa tính toán song song phần cứng). | Nhanh hơn (đặc biệt khi có GPU) vì tính toán hoàn toàn song song (Matrix Multiplication). |
-| **Số lượng tham số** | Thường ít tham số hơn. Dễ hội tụ trên dataset nhỏ. | Khá nhiều tham số. Cần lượng dữ liệu lớn và Dropout mạnh tay để tránh Overfitting. |
-| **Sự phụ thuộc vị trí** | Có sẵn thông qua cách đọc tuần tự của RNN. | Phải thêm thủ công bằng Positional Embedding. |
-
-## 🛠 Cách chạy chương trình
-
-Bạn có thể chạy riêng lẻ từng mô hình bằng lệnh:
+1. Tạo Kaggle Notebook và bật GPU.
+2. Chọn **Add Data**, thêm dataset
+   `dongrelaxman/amazon-reviews-dataset`.
+3. Upload/clone toàn bộ repository vào notebook, sau đó mở terminal tại thư mục
+   gốc của project.
+4. Chạy lần lượt:
 
 ```bash
-# Chạy mô hình BiLSTM + Attention
-python sentiment_analysis.py
-
-# Chạy mô hình Transformer
-python transformer_sentiment.py
+python "RNN/rnn_sentiment.py"
+python "BiLSTM +  Attention/BiLSTM_Attention.py"
+python "Transformer/transformer_sentiment.py"
+python compare_models.py
 ```
 
-Sau khi chạy xong, mô hình đã huấn luyện, tokenizer và các biểu đồ đánh giá (Accuracy, Loss, Confusion Matrix) sẽ lưu trong thư mục `outputs/`.
+Pipeline tự tìm `Amazon_Reviews.csv` trong `/kaggle/input`. Nếu file ở nơi khác:
+
+```bash
+AMAZON_REVIEWS_CSV=/duong/dan/Amazon_Reviews.csv python "RNN/rnn_sentiment.py"
+```
+
+Để smoke test nhanh trước khi train toàn bộ:
+
+```bash
+MAX_SAMPLES=5000 EPOCHS=1 BATCH_SIZE=64 python "RNN/rnn_sentiment.py"
+```
+
+Các biến cấu hình phổ biến:
+
+| Biến | Mặc định | Ý nghĩa |
+|---|---:|---|
+| `MAX_WORDS` | 50000 | Vocabulary tối đa |
+| `MAX_LEN` | 200 | Số token mỗi review |
+| `EMBEDDING_DIM` | 128 | Chiều embedding |
+| `BATCH_SIZE` | 128 | Batch size |
+| `EPOCHS` | 10 | Epoch tối đa |
+| `MAX_SAMPLES` | toàn bộ | Giới hạn mẫu để thử nhanh |
+| `USE_CLASS_WEIGHTS` | 1 | Cân bằng loss theo lớp |
+
+## Output
+
+Mỗi model lưu model, tokenizer, metrics, prediction và biểu đồ vào:
+
+```text
+outputs/
+├── rnn/
+├── bilstm_attention/
+├── transformer/
+└── comparison/
+```
+
+`compare_models.py` chỉ chạy sau khi có `metrics.json` của đủ ba model. Script
+tạo bảng so sánh, Macro F1 theo lớp, validation curves và biểu đồ chi phí tính
+toán. Không có số liệu kết quả giả định được hard-code trong repository.
+
+## Kiểm tra proposal
+
+BiLSTM + Attention hiện khớp pipeline được mô tả trong `NMAI_proposal.md`:
+Embedding → BiLSTM hai chiều → Attention → Dense → Softmax 5 lớp; train bằng
+Adam/cross-entropy, có shuffle, EarlyStopping và đánh giá precision/recall/F1,
+accuracy, confusion matrix.
+
+Hai lỗi kỹ thuật của phiên bản cũ đã được sửa:
+
+- tokenizer không còn fit trên validation;
+- attention bỏ qua padding thay vì gán trọng số cho token đệm.
+
+Transformer cũng đã được bổ sung padding mask cho self-attention/pooling và dùng
+dimension theo từng attention head đúng với embedding tổng.

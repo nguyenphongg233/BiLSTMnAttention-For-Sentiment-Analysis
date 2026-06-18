@@ -24,7 +24,7 @@ graph TD
         D("Bidirectional LSTM Layer<br>(128 Units x 2 chiều)")
         Drop2("Dropout (Rate = 0.3)")
         
-        E{"Custom Attention Layer<br>(Trích xuất Context Vector)"}
+        E{"Masked Custom Attention Layer<br>(Trích xuất Context Vector)"}
         
         F("Dense Layer (Hidden)<br>(64 Units, ReLU)")
         Drop3("Dropout (Rate = 0.3)")
@@ -58,7 +58,7 @@ graph TD
 1. **Input (Đầu vào)**: Đoạn văn bản bình luận của khách hàng. Sẽ được xử lý cắt gọt / đệm (padding) để đảm bảo chuỗi luôn dài đúng 200 từ (`MAX_LEN`).
 2. **Embedding**: Lớp giúp chuyển đổi từng con số rời rạc (từ vựng) thành một không gian vector đa chiều (128 chiều). Giúp mô hình hiểu được ngữ nghĩa (semantics) và mối liên hệ giữa các từ.
 3. **BiLSTM (Bidirectional LSTM)**: Đây là lớp LSTM đọc 2 chiều. Nó sẽ đọc câu văn từ trái sang phải, và đồng thời đọc ngược từ phải sang trái để thấu hiểu toàn bộ ngữ cảnh của câu. Nó cung cấp Output cho từng từ trong câu.
-4. **Attention Mechanism (Cơ chế tập trung)**: Thay vì nhớ toàn bộ chuỗi dài 200 từ, Attention sẽ gán "trọng số" cho từng từ. Từ nào càng mang tính quyết định cảm xúc (vd: "rất tệ", "tuyệt vời") thì trọng số càng cao. Lớp này sẽ nén ngữ cảnh lại thành 1 vector chứa những thông tin cốt lõi nhất.
+4. **Attention Mechanism (Cơ chế tập trung)**: Attention gán trọng số cho từng từ rồi nén chuỗi thành context vector. Padding mask được áp dụng trước softmax, nên các token đệm không nhận trọng số attention.
 5. **Dense (Lớp kết nối đầy đủ)**: Học các đặc trưng phức tạp từ vector do Attention tạo ra thông qua hàm kích hoạt ReLU.
 6. **Output**: Gồm 5 Nơ-ron tương ứng với số sao từ 1 đến 5. Hàm kích hoạt `Softmax` đảm bảo đầu ra là một tỷ lệ phần trăm (%), phân loại có xác suất cao nhất chính là kết quả dự đoán của mô hình. 
 7. **Dropout**: Được chèn vào giữa các lớp với tỷ lệ 30% (0.3) để tắt ngẫu nhiên các nơ-ron trong quá trình huấn luyện, nhằm tránh hiện tượng mô hình học vẹt (Overfitting).
