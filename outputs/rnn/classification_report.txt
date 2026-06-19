@@ -1,0 +1,11 @@
+              precision    recall  f1-score   support
+
+       1 sao       0.86      0.96      0.90      2591
+       2 sao       0.07      0.02      0.03       240
+       3 sao       0.15      0.04      0.07       165
+       4 sao       0.20      0.27      0.23       237
+       5 sao       0.76      0.68      0.72       844
+
+    accuracy                           0.77      4077
+   macro avg       0.41      0.39      0.39      4077
+weighted avg       0.72      0.77      0.74      4077

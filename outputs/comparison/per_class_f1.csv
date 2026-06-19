@@ -1,0 +1,16 @@
+Model,Rating,F1
+SimpleRNN,1 sao,0.860685379714138
+SimpleRNN,2 sao,0.0
+SimpleRNN,3 sao,0.0
+SimpleRNN,4 sao,0.0
+SimpleRNN,5 sao,0.6538011695906433
+BiLSTM + Attention,1 sao,0.9167270094134684
+BiLSTM + Attention,2 sao,0.0158102766798418
+BiLSTM + Attention,3 sao,0.0648648648648648
+BiLSTM + Attention,4 sao,0.0674157303370786
+BiLSTM + Attention,5 sao,0.7987584066218314
+Transformer,1 sao,0.9056603773584906
+Transformer,2 sao,0.0
+Transformer,3 sao,0.0
+Transformer,4 sao,0.0
+Transformer,5 sao,0.7620947630922693
