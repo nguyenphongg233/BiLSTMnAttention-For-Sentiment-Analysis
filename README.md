@@ -102,7 +102,7 @@ BiLSTM + Attention hiện khớp pipeline được mô tả trong `NMAI_proposal
 Embedding → BiLSTM hai chiều → Attention → Dense → Softmax 5 lớp; train bằng Adam/cross-entropy, có shuffle, EarlyStopping và đánh giá precision/recall/F1, accuracy, confusion matrix.
 
 Các lỗi kỹ thuật của phiên bản gốc đã được khắc phục hoàn toàn:
-- Thay vì `Embedding` tự học, mô hình khởi tạo với **GloVe 100d** (`trainable=True`).
+- Thay vì `Embedding` tự học, mô hình khởi tạo với **GloVe** (`trainable=True`).
 - Các lớp Dense áp dụng **L2 Regularizer** và Dropout.
 - Tokenizer không còn bị leakage (chỉ fit trên train).
 - Masking hoạt động trơn tru xuyên suốt Attention.
