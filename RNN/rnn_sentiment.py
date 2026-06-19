@@ -1,4 +1,4 @@
-"""Entry point for the regularized BiLSTM + masked attention classifier."""
+"""Entry point for the regularized SimpleRNN classifier."""
 
 import sys
 from pathlib import Path
@@ -9,4 +9,4 @@ from sentiment_pipeline import main
 
 
 if __name__ == "__main__":
-    main(default_model="bilstm")
+    main(default_model="rnn")
