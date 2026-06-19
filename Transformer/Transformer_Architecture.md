@@ -18,22 +18,22 @@ graph TD
     end
     
     subgraph neural_network [Kiến trúc Mạng Neural Keras]
-        C("Token & Position Embedding Layer<br>(Kích thước: 50000 x 128)")
+        C("Token & Position Embedding Layer<br>(GloVe 100d, Trainable)")
         
         subgraph transformer_block [Transformer Block]
-            D("Masked Multi-Head Attention<br>(4 Heads, Key Dim: 32)")
+            D("Masked Multi-Head Attention<br>(4 Heads, Key Dim: 25)")
             E("Add & Layer Normalization")
-            F("Feed Forward Network<br>(Dense 128 -> Dense 128)")
+            F("Feed Forward Network<br>(Dense 256 GELU -> Dense 100)")
             G("Add & Layer Normalization")
         end
         
         H("Masked Global Average Pooling 1D")
-        Drop1("Dropout (Rate = 0.3)")
+        Drop1("Dropout (Rate = 0.4 - 0.5)")
         
-        I("Dense Layer (Hidden)<br>(64 Units, ReLU)")
-        Drop2("Dropout (Rate = 0.3)")
+        I("Dense Layer (Hidden)<br>(64 Units, ReLU, L2 Reg)")
+        Drop2("Dropout (Rate = 0.4 - 0.5)")
         
-        J("Output Layer<br>(5 Units, Softmax)")
+        J("Output Layer<br>(5 Units, Softmax, L2 Reg)")
     end
     
     K("Kết quả Dự Đoán<br>(Xác suất từ 1 sao đến 5 sao)")
@@ -62,9 +62,9 @@ graph TD
 ## Chú giải các thành phần trong sơ đồ:
 
 1. **Input (Đầu vào)**: Đoạn văn bản bình luận của khách hàng. Sẽ được xử lý cắt gọt / đệm (padding) để đảm bảo chuỗi luôn dài đúng 200 từ (`MAX_LEN`).
-2. **Token & Position Embedding**: Kết hợp Word Embedding (nhúng từ vựng thành vector 128 chiều) và Positional Embedding (lưu trữ thông tin vị trí của từ trong câu). Do Transformer xử lý dữ liệu song song (không tuần tự như RNN/LSTM), nó cần thông tin vị trí để hiểu thứ tự của các từ.
+2. **Token & Position Embedding**: Kết hợp Word Embedding (nhúng từ vựng thành vector 100 chiều từ GloVe) và Positional Embedding (lưu trữ thông tin vị trí của từ trong câu). Do Transformer xử lý dữ liệu song song (không tuần tự như RNN/LSTM), nó cần thông tin vị trí để hiểu thứ tự của các từ.
 3. **Transformer Block**: Khối xử lý cốt lõi của Transformer:
-   - **Multi-Head Attention**: Gồm 4 "đầu" (heads) hoạt động song song, mỗi head có chiều 32 để tổng chiều biểu diễn là 128. Padding mask được truyền vào attention để token đệm không ảnh hưởng kết quả.
+   - **Multi-Head Attention**: Gồm 4 "đầu" (heads) hoạt động song song, mỗi head có chiều 25 để tổng chiều biểu diễn là 100. Padding mask được truyền vào attention để token đệm không ảnh hưởng kết quả.
    - **Feed Forward Network (FFN)**: Mạng truyền thẳng giúp trích xuất các đặc trưng phi tuyến tính sâu hơn từ kết quả của quá trình Attention.
    - **Add & Layer Normalization**: Kỹ thuật chuẩn hóa và cộng kết nối thặng dư (residual connection) giúp mô hình huấn luyện ổn định và tránh được hiện tượng triệt tiêu đạo hàm (vanishing gradient).
 4. **Global Average Pooling 1D**: Gom đặc trưng chuỗi thành một vector duy nhất và bỏ qua các vị trí padding thông qua mask.

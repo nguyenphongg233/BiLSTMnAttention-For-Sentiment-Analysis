@@ -12,9 +12,13 @@ rating 1–5 sao. Để phép so sánh có ý nghĩa, cả ba dùng chung:
 - Chuỗi dài tối đa 200 token, post-padding và post-truncation.
 - Embedding học từ đầu, 128 chiều; token `0` là padding và được mask.
 - Output 5 nút Softmax; loss `sparse_categorical_crossentropy`; optimizer Adam.
-- Batch size 128, tối đa 10 epoch, EarlyStopping patience 3,
+- Regularization chống Overfitting mạnh mẽ:
+  - Sử dụng Pre-trained Embeddings từ **GloVe 100d** (từ điển 6B) với `trainable=True`.
+  - Áp dụng **L2 Regularization** (`0.01`) vào các lớp Dense.
+  - Tăng cường **Dropout** lên mức cao (`0.4 - 0.5`).
+- Batch size 64 hoặc 128, tối đa 10 epoch, EarlyStopping patience 3,
   ReduceLROnPlateau patience 2.
-- Class weight cân bằng mặc định do phân bố rating thường lệch. Có thể tắt bằng
+- Class weight cân bằng mặc định (`np.clip` ngưỡng an toàn 0.5 - 3.0) do phân bố rating thường lệch. Có thể tắt bằng
   `USE_CLASS_WEIGHTS=0`.
 - Metrics: accuracy, macro precision/recall/F1, weighted F1, rating MAE,
   confusion matrix, F1 từng lớp, số tham số và thời gian chạy.
@@ -29,6 +33,7 @@ Luồng: `Embedding → Dropout → SimpleRNN(128) → Dense(64) → Dropout →
 SimpleRNN là baseline tuần tự và một chiều. Hidden state được cập nhật theo từng
 token, nên kiến trúc gọn nhưng dễ gặp vanishing gradient khi phụ thuộc ngữ cảnh
 dài. Padding được bỏ qua nhờ mask từ Embedding.
+*Cải tiến mới nhất:* Bật cờ `unroll=True` để trải phẳng vòng lặp `for` tuần tự trên bộ nhớ, giúp GPU tối ưu ma trận và tăng tốc độ huấn luyện đánh kể trên các accelerator hiện đại (như Apple Metal / GPU).
 
 Tham số riêng mặc định:
 
@@ -36,7 +41,8 @@ Tham số riêng mặc định:
 |---|---:|
 | RNN units | 128 |
 | Dense hidden | 64 |
-| Dropout | 0.3 |
+| Dropout | 0.4 - 0.5 |
+| L2 Rate | 0.01 |
 
 ## 3. BiLSTM + Attention
 
@@ -57,7 +63,8 @@ cảnh, Dense và Softmax 5 lớp; đồng thời có shuffle, EarlyStopping và
 | LSTM units mỗi chiều | 128 |
 | Attention | Additive, trainable |
 | Dense hidden | 64 |
-| Dropout | 0.3 |
+| Dropout | 0.4 - 0.5 |
+| L2 Rate | 0.01 |
 
 ## 4. Transformer encoder
 
@@ -78,7 +85,8 @@ và pooling, tránh để các token `0` làm nhiễu biểu diễn câu.
 | Dimension mỗi head | 32 |
 | Feed-forward dimension | 256 |
 | Dense hidden | 64 |
-| Dropout | 0.3 |
+| Dropout | 0.4 - 0.5 |
+| L2 Rate | 0.01 |
 
 Đây là Transformer encoder huấn luyện từ đầu, không phải mô hình pretrained như
 BERT. Nó là cách áp dụng Transformer hợp lệ cho bài toán classification, nhưng
