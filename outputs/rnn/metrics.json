@@ -1,32 +1,33 @@
 {
   "model_key": "rnn",
   "model_name": "SimpleRNN",
-  "parameters": 3460997,
-  "epochs_trained": 9,
-  "training_seconds": 209.81440079200547,
-  "inference_ms_per_sample": 1.4967531548823028,
+  "parameters": 2709393,
+  "epochs_trained": 10,
+  "training_seconds": 235.36492358299438,
+  "inference_ms_per_sample": 1.4516281345012514,
   "validation_samples": 4081,
   "config": {
     "max_words": 50000,
     "max_len": 200,
-    "embedding_dim": 128,
-    "dropout_rate": 0.3,
+    "embedding_dim": 100,
+    "dropout_rate": 0.5,
+    "l2_rate": 0.01,
     "num_classes": 5,
     "batch_size": 128,
     "epochs": 10,
     "validation_split": 0.2,
     "seed": 42,
     "max_samples": null,
-    "use_class_weights": true,
+    "use_class_weights": false,
     "output_dir": "outputs/rnn",
     "rnn_units": 128
   },
   "metrics": {
-    "accuracy": 0.6020583190394511,
-    "macro_precision": 0.3773566526251358,
-    "macro_recall": 0.3758035243792975,
-    "macro_f1": 0.3629873634347112,
-    "weighted_f1": 0.646191513385431,
-    "rating_mae": 0.5858858123009066
+    "accuracy": 0.7493261455525606,
+    "macro_precision": 0.2846590026744888,
+    "macro_recall": 0.32520618709734883,
+    "macro_f1": 0.3028973098609563,
+    "weighted_f1": 0.6818176444850343,
+    "rating_mae": 0.6287674589561382
   }
 }

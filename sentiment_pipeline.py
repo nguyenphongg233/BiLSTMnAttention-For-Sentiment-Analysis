@@ -181,6 +181,41 @@ def prepare_data(
     }
 
 
+def load_glove_matrix(word_index: dict, vocab_size: int, embed_dim: int) -> np.ndarray:
+    print("Đang tải GloVe embeddings từ Kaggle (có thể mất chút thời gian nếu chưa cache)...")
+    import kagglehub
+    glove_dir = Path(kagglehub.dataset_download("rtatman/glove-global-vectors-for-word-representation"))
+    glove_file = glove_dir / f"glove.6B.{embed_dim}d.txt"
+    if not glove_file.exists():
+        raise FileNotFoundError(f"Không tìm thấy file GloVe: {glove_file}")
+    
+    embeddings_index = {}
+    with glove_file.open("r", encoding="utf-8") as f:
+        for line in f:
+            values = line.split()
+            word = values[0]
+            coefs = np.asarray(values[1:], dtype="float32")
+            embeddings_index[word] = coefs
+            
+    print(f"Đã tải {len(embeddings_index):,} word vectors.")
+    
+    embedding_matrix = np.zeros((vocab_size, embed_dim))
+    hits = 0
+    misses = 0
+    for word, i in word_index.items():
+        if i >= vocab_size:
+            continue
+        embedding_vector = embeddings_index.get(word)
+        if embedding_vector is not None:
+            embedding_matrix[i] = embedding_vector
+            hits += 1
+        else:
+            misses += 1
+            
+    print(f"Chuyển đổi thành công: {hits:,} từ khớp, {misses:,} từ không khớp.")
+    return embedding_matrix
+
+
 def train_model(
     model: tf.keras.Model,
     data: dict,
@@ -280,6 +315,7 @@ def evaluate_and_save(
         "weighted_f1": float(f1_score(y_true, y_pred, average="weighted", zero_division=0)),
         "rating_mae": float(mean_absolute_error(y_true + 1, y_pred + 1)),
     }
+    safe_config = {k: v for k, v in config.items() if k != "embedding_matrix"}
     summary = {
         "model_key": model_key,
         "model_name": model_name,
@@ -288,7 +324,7 @@ def evaluate_and_save(
         "training_seconds": float(training_seconds),
         "inference_ms_per_sample": float(inference_seconds * 1000 / len(y_true)),
         "validation_samples": int(len(y_true)),
-        "config": config,
+        "config": safe_config,
         "metrics": metrics,
     }
 
@@ -354,6 +390,9 @@ def run_pipeline(
         seed=config["seed"],
         max_samples=config["max_samples"],
     )
+    config["embedding_matrix"] = load_glove_matrix(
+        data["tokenizer"].word_index, data["vocab_size"], config["embedding_dim"]
+    )
     model = build_model(data["vocab_size"], config)
     model.summary()
     history, training_seconds = train_model(
@@ -385,8 +424,9 @@ def base_config(model_key: str) -> dict:
     return {
         "max_words": env_int("MAX_WORDS", 50_000),
         "max_len": env_int("MAX_LEN", 200),
-        "embedding_dim": env_int("EMBEDDING_DIM", 128),
-        "dropout_rate": env_float("DROPOUT_RATE", 0.3),
+        "embedding_dim": env_int("EMBEDDING_DIM", 100),
+        "dropout_rate": env_float("DROPOUT_RATE", 0.5),
+        "l2_rate": env_float("L2_RATE", 0.01),
         "num_classes": 5,
         "batch_size": env_int("BATCH_SIZE", 128),
         "epochs": env_int("EPOCHS", 10),

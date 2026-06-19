@@ -17,6 +17,7 @@ from tensorflow.keras.layers import (
     MultiHeadAttention,
 )
 from tensorflow.keras.models import Model
+from tensorflow.keras.regularizers import l2
 
 ROOT = Path(__file__).resolve().parents[1] if "__file__" in globals() else Path.cwd()
 if str(ROOT) not in sys.path:
@@ -27,12 +28,15 @@ from sentiment_pipeline import base_config, env_int, run_pipeline
 
 @tf.keras.utils.register_keras_serializable(package="sentiment")
 class TokenAndPositionEmbedding(Layer):
-    def __init__(self, max_len: int, vocab_size: int, embed_dim: int, **kwargs):
+    def __init__(self, max_len: int, vocab_size: int, embed_dim: int, embedding_matrix=None, **kwargs):
         super().__init__(**kwargs)
         self.max_len = max_len
         self.vocab_size = vocab_size
         self.embed_dim = embed_dim
-        self.token_embedding = Embedding(vocab_size, embed_dim, mask_zero=True)
+        if embedding_matrix is not None:
+            self.token_embedding = Embedding(vocab_size, embed_dim, mask_zero=True, weights=[embedding_matrix], trainable=True)
+        else:
+            self.token_embedding = Embedding(vocab_size, embed_dim, mask_zero=True)
         self.position_embedding = Embedding(max_len, embed_dim)
         self.supports_masking = True
 
@@ -116,6 +120,7 @@ def build_model(vocab_size: int, config: dict) -> Model:
         config["max_len"],
         vocab_size,
         config["embedding_dim"],
+        embedding_matrix=config.get("embedding_matrix"),
         name="token_position_embedding",
     )(inputs)
     for index in range(config["transformer_blocks"]):
@@ -129,9 +134,14 @@ def build_model(vocab_size: int, config: dict) -> Model:
     # GlobalAveragePooling1D nhận mask truyền qua block và bỏ padding khỏi trung bình.
     x = GlobalAveragePooling1D(name="masked_average_pooling")(x)
     x = Dropout(config["dropout_rate"])(x)
-    x = Dense(64, activation="relu")(x)
+    x = Dense(64, activation="relu", kernel_regularizer=l2(config["l2_rate"]))(x)
     x = Dropout(config["dropout_rate"])(x)
-    outputs = Dense(config["num_classes"], activation="softmax", name="rating")(x)
+    outputs = Dense(
+        config["num_classes"], 
+        activation="softmax", 
+        kernel_regularizer=l2(config["l2_rate"]),
+        name="rating"
+    )(x)
     model = Model(inputs, outputs, name="Transformer_Encoder_Classifier")
     model.compile(
         optimizer="adam",

@@ -8,6 +8,7 @@ from pathlib import Path
 import tensorflow as tf
 from tensorflow.keras.layers import Bidirectional, Dense, Dropout, Embedding, Input, LSTM, Layer
 from tensorflow.keras.models import Model
+from tensorflow.keras.regularizers import l2
 
 ROOT = Path(__file__).resolve().parents[1] if "__file__" in globals() else Path.cwd()
 if str(ROOT) not in sys.path:
@@ -61,6 +62,8 @@ def build_model(vocab_size: int, config: dict) -> Model:
         vocab_size,
         config["embedding_dim"],
         mask_zero=True,
+        weights=[config["embedding_matrix"]],
+        trainable=True,
         name="token_embedding",
     )(inputs)
     x = Dropout(config["dropout_rate"], name="embedding_dropout")(x)
@@ -70,9 +73,19 @@ def build_model(vocab_size: int, config: dict) -> Model:
     )(x)
     x = Dropout(config["dropout_rate"], name="bilstm_dropout")(x)
     x = AttentionLayer(name="additive_attention")(x)
-    x = Dense(64, activation="relu", name="classifier_hidden")(x)
+    x = Dense(
+        64, 
+        activation="relu", 
+        kernel_regularizer=l2(config["l2_rate"]),
+        name="classifier_hidden"
+    )(x)
     x = Dropout(config["dropout_rate"], name="classifier_dropout")(x)
-    outputs = Dense(config["num_classes"], activation="softmax", name="rating")(x)
+    outputs = Dense(
+        config["num_classes"], 
+        activation="softmax", 
+        kernel_regularizer=l2(config["l2_rate"]),
+        name="rating"
+    )(x)
     model = Model(inputs, outputs, name="BiLSTM_Attention")
     model.compile(
         optimizer="adam",
