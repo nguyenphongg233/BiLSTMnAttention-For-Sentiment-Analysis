@@ -1,0 +1,34 @@
+{
+  "model_key": "rnn_fold_2",
+  "model_name": "SimpleRNN (Fold 2)",
+  "parameters": 2670593,
+  "epochs_trained": 10,
+  "training_seconds": 198.48257612495217,
+  "inference_ms_per_sample": 1.3544760372353222,
+  "validation_samples": 4081,
+  "config": {
+    "k_folds": 5,
+    "max_words": 50000,
+    "max_len": 200,
+    "embedding_dim": 100,
+    "dropout_rate": 0.5,
+    "l2_rate": 0.01,
+    "num_classes": 5,
+    "batch_size": 128,
+    "epochs": 10,
+    "validation_split": 0.2,
+    "seed": 42,
+    "max_samples": null,
+    "use_class_weights": false,
+    "output_dir": "outputs/rnn",
+    "rnn_units": 128
+  },
+  "metrics": {
+    "accuracy": 0.7735849056603774,
+    "macro_precision": 0.2938586262036604,
+    "macro_recall": 0.35182806209021217,
+    "macro_f1": 0.32021006244972294,
+    "weighted_f1": 0.7077437392572814,
+    "rating_mae": 0.5231560891938251
+  }
+}

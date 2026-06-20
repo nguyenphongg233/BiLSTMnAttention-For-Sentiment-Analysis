@@ -40,8 +40,14 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 
 
-
-
+@tf.keras.utils.register_keras_serializable(package="sentiment")
+def sparse_ordinal_loss(y_true, y_pred):
+    ce_loss = tf.keras.losses.sparse_categorical_crossentropy(y_true, y_pred)
+    classes = tf.range(5, dtype=tf.float32)
+    expected_val = tf.reduce_sum(y_pred * classes, axis=-1)
+    true_val = tf.cast(tf.reshape(y_true, [-1]), tf.float32)
+    distance_penalty = tf.square(expected_val - true_val)
+    return ce_loss + 0.5 * distance_penalty
 
 DATASET_HANDLE = "dongrelaxman/amazon-reviews-dataset"
 CLASS_NAMES = ["1 sao", "2 sao", "3 sao", "4 sao", "5 sao"]

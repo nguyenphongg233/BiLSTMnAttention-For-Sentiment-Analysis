@@ -1,0 +1,845 @@
+\documentclass[aspectratio=169]{beamer}
+
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+\usepackage{calc}
+\usepackage{polyglossia}
+\setmainlanguage{vietnamese}
+\usepackage{amsthm,amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{subcaption}
+\usepackage{xcolor}
+
+\newtheorem{thm}{Định lý}
+\newtheorem{defn}{Định nghĩa}
+\renewcommand{\proofname}{\textbf{Chứng minh}}
+\renewcommand{\qedsymbol}{$\blacksquare$}
+\setbeamertemplate{theorems}[numbered]
+
+%% TYPESET
+\makeatletter
+\newcommand{\leqnomode}{\tagsleft@true}
+\newcommand{\reqnomode}{\tagsleft@false}
+\makeatother
+\let\Mathcal\mathcal
+\IfFileExists{dutchcal.sty}{\usepackage{dutchcal}}{}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\abs}[1]{\left\lvert#1\right\rvert}
+\newcommand{\gr}{\operatorname{gr}}
+\newcommand{\rank}{\operatorname{rank}}
+\newcommand{\toto}{\rightrightarrows}
+\newcommand{\F}{\Mathcal{F}}
+\newcommand{\K}{\mathbb{K}}
+\newcommand{\R}{\mathbb{R}}
+\def\C{\mathbb{C}}
+\newcommand{\dom}{\operatorname{dom}}
+\newcommand{\im}{\operatorname{im}}
+\newcommand{\g}{\mathcal{g}}
+\global\long\def\MP{\text{mp}}
+
+% Dùng theme HUST nếu các tệp theme có trong project Overleaf.
+% Fallback Madrid giúp slide vẫn biên dịch được khi chỉ upload file .tex.
+\IfFileExists{beamerthemehust.sty}{
+    \usetheme{hust}
+}{
+    \usetheme{Madrid}
+    \definecolor{hustred}{RGB}{177,18,38}
+    \setbeamercolor{structure}{fg=hustred}
+    \setbeamercolor{frametitle}{fg=white,bg=hustred}
+}
+
+\setbeamertemplate{caption}[numbered]
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{bibliography item}[text]
+
+% Giống báo cáo: ảnh có thể nằm trong overleaf_assets/ ở repository
+% hoặc được upload trực tiếp vào thư mục gốc của Overleaf.
+\graphicspath{{overleaf_assets/}{./}}
+\newcommand{\safeincludegraphics}[2][]{%
+    \IfFileExists{#2}{%
+        \includegraphics[#1]{#2}%
+    }{%
+        \IfFileExists{overleaf_assets/#2}{%
+            \includegraphics[#1]{overleaf_assets/#2}%
+        }{%
+            \fbox{\parbox[c][3.2cm][c]{0.86\linewidth}{%
+                \centering\textbf{Thiếu tệp hình}\\[0.15cm]
+                \texttt{\detokenize{#2}}\\[0.15cm]
+                Tải tệp từ \texttt{overleaf\_assets} lên Overleaf.%
+            }}%
+        }%
+    }%
+}
+
+\newcommand{\Image}[1]{%
+    \sbox0{\safeincludegraphics[height=0.65\paperheight]{#1}}%
+    \ifdim\wd0 < \textwidth
+        \safeincludegraphics[height=0.65\paperheight]{#1}%
+    \else
+        \safeincludegraphics[width=\textwidth]{#1}%
+    \fi%
+}
+
+\newcommand{\modelname}{BiLSTM + Attention}
+\newcommand{\codeword}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\tokenbox}[2]{%
+    \tikz[baseline=(tok.base)]{
+        \node[
+            rounded corners=2pt,
+            fill=#1,
+            inner xsep=4pt,
+            inner ysep=2pt
+        ] (tok) {\strut #2};
+    }%
+}
+
+\title{\textbf{PHÂN LOẠI CẢM XÚC ĐA MỨC\\TRÊN AMAZON REVIEWS}}
+\subtitle{Mô hình BiLSTM kết hợp Additive Attention}
+\author{Nhóm 5}
+\institute{Trường Công nghệ Thông tin và Truyền thông\\Đại học Bách khoa Hà Nội}
+\date{2026}
+
+\begin{document}
+
+\begin{frame}[plain,noframenumbering]
+    \maketitle
+\end{frame}
+
+\begin{frame}{\textbf{\large Thành viên nhóm}}
+    \vspace*{-0.45cm}
+    \begin{large}
+        \begin{enumerate}
+            \item GVHD: PGS. TS. Ngô Văn Linh
+            \item Trần Lê Ngọc Tâm
+            \hfill \makebox[4.2cm][l]{MSSV: 202416346}
+            \item Nguyễn Phong
+            \hfill \makebox[4.2cm][l]{MSSV: 202400066}
+            \item Nguyễn Ngọc Tuấn Anh
+            \hfill \makebox[4.2cm][l]{MSSV: 202400029}
+        \end{enumerate}
+    \end{large}
+\end{frame}
+
+\begin{frame}{\textbf{\large Nội dung}}
+    \tableofcontents
+\end{frame}
+
+% =========================================================
+\section{1. Bài toán và dữ liệu}
+
+\begin{frame}{\textbf{\large Bài toán và mục tiêu}}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.55\textwidth}
+            \begin{block}{Bài toán}
+                Phân loại mỗi review vào \textbf{một trong 5 lớp}:
+                \[
+                    y\in\{1,2,3,4,5\}\text{ sao}.
+                \]
+                Đây là \textbf{multiclass classification}, không phải hồi quy.
+            \end{block}
+
+            \begin{itemize}
+                \item Đầu ra: Softmax 5 lớp.
+                \item Loss: sparse categorical cross-entropy.
+                \item Dự đoán: lớp có xác suất lớn nhất.
+            \end{itemize}
+        \end{column}
+
+        \begin{column}{0.41\textwidth}
+            \begin{alertblock}{Mục tiêu chính}
+                \begin{itemize}
+                    \item Nắm bắt ngữ cảnh hai chiều.
+                    \item Tập trung vào token quan trọng.
+                    \item So sánh với SimpleRNN và Transformer Encoder.
+                    \item Đánh giá cả lớp thiểu số, không chỉ Accuracy.
+                \end{itemize}
+            \end{alertblock}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{\textbf{\large Dataset: Amazon Reviews}}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.50\textwidth}
+            \begin{block}{Nguồn dữ liệu}
+                \textbf{Amazon Reviews Dataset}\\[0.12cm]
+                \href{https://www.kaggle.com/datasets/dongrelaxman/amazon-reviews-dataset}
+                {\textcolor{blue}{Mở trang dữ liệu trên Kaggle}}
+            \end{block}
+
+            \begin{itemize}
+                \item Hai trường sử dụng: \codeword{Review Text}, \codeword{Rating}.
+                \item Sau làm sạch: \textbf{20.405 review hợp lệ}.
+                \item Chia phân tầng: 80\% train, 20\% validation.
+                \item Validation: \textbf{4.081 mẫu}.
+            \end{itemize}
+
+            \begin{alertblock}{Baseline dễ gây hiểu nhầm}
+                Nếu luôn đoán \textbf{1 sao}, mô hình đã đạt
+                \textbf{63,49\% Accuracy} mà chưa học được năm mức cảm xúc.
+            \end{alertblock}
+        \end{column}
+
+        \begin{column}{0.46\textwidth}
+            \centering
+            \small
+            \begin{tabular}{lrr}
+                \toprule
+                \textbf{Lớp} & \textbf{Số mẫu} & \textbf{Tỷ lệ} \\
+                \midrule
+                1 sao & 2.591 & 63,49\% \\
+                2 sao & 241 & 5,91\% \\
+                3 sao & 165 & 4,04\% \\
+                4 sao & 239 & 5,86\% \\
+                5 sao & 845 & 20,71\% \\
+                \bottomrule
+            \end{tabular}
+
+            \vspace{0.25cm}
+            \begin{alertblock}{Lớp thiểu số}
+                Ba lớp 2--4 sao chỉ chiếm \textbf{15,80\%}. Vì vậy kết quả phải
+                đọc cùng \textbf{Macro F1}, \textbf{rating MAE} và F1 từng lớp.
+            \end{alertblock}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{\textbf{\large Vì sao cần Macro F1 và rating MAE?}}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Macro F1: công bằng giữa các lớp}
+                \begin{align*}
+                    F1_k
+                    &=\frac{2P_kR_k}{P_k+R_k},\\
+                    \mathrm{MacroF1}
+                    &=\frac{1}{5}\sum_{k=1}^{5}F1_k.
+                \end{align*}
+                Mỗi lớp đóng góp đúng \textbf{20\%}, bất kể có 2.591 hay chỉ
+                165 mẫu. Nếu bỏ qua lớp 2--4 sao, Macro F1 giảm mạnh.
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \begin{block}{MAE: đo độ xa của lỗi rating}
+                \[
+                    \mathrm{MAE}_{rating}
+                    =\frac{1}{N}\sum_{i=1}^{N}|y_i-\hat y_i|.
+                \]
+                \centering
+                $1\!\rightarrow\!2$: lỗi 1
+                \qquad
+                $1\!\rightarrow\!5$: lỗi 4
+            \end{block}
+        \end{column}
+    \end{columns}
+
+    \vspace{0.25cm}
+    \begin{exampleblock}{Ba góc nhìn bổ sung cho nhau}
+        \centering
+        Accuracy: đúng hay sai
+        \quad $\big|$ \quad
+        Macro F1: có bỏ quên lớp thiểu số không
+        \quad $\big|$ \quad
+        MAE: sai xa bao nhiêu sao
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}{\textbf{\large Pipeline xử lý dữ liệu}}
+    \vspace*{-0.2cm}
+    \begin{tikzpicture}[
+        node distance=0.34cm,
+        pstep/.style={
+            draw=hustred,
+            rounded corners,
+            fill=hustred!7,
+            minimum height=0.82cm,
+            text width=2.48cm,
+            align=center,
+            font=\scriptsize
+        },
+        arrow/.style={-{Latex[length=2mm]},thick,hustred}
+    ]
+        \node[pstep] (clean) {\textbf{1. Làm sạch}\\lowercase, bỏ HTML, trùng/rỗng};
+        \node[pstep,right=of clean] (split) {\textbf{2. Stratified split}\\80\% train -- 20\% validation};
+        \node[pstep,right=of split] (fit) {\textbf{3. Fit tokenizer}\\chỉ trên train, có \codeword{<OOV>}};
+        \node[pstep,right=of fit] (pad) {\textbf{4. Mã hóa}\\post-pad/truncate về 200 token};
+        \draw[arrow] (clean) -- (split);
+        \draw[arrow] (split) -- (fit);
+        \draw[arrow] (fit) -- (pad);
+    \end{tikzpicture}
+
+    \vspace{0.28cm}
+    \begin{exampleblock}{Một review đi qua pipeline}
+        \small
+        \begin{tabularx}{\linewidth}{>{\bfseries}p{2.1cm} X}
+            Dữ liệu thô &
+            \codeword{<b>Battery</b> is NOT good!!!} \quad Rating: 2 \\[0.12cm]
+            Sau làm sạch &
+            \tokenbox{blue!12}{battery}\ 
+            \tokenbox{blue!12}{is}\ 
+            \tokenbox{orange!22}{not}\ 
+            \tokenbox{red!18}{good} \\[0.12cm]
+            Token IDs &
+            $[842,\ 17,\ 39,\ 64]$ \scriptsize (minh họa) \\[0.12cm]
+            Sau padding &
+            $[842,\ 17,\ 39,\ 64,\ 0,\ 0,\ldots,0]\in\mathbb{N}^{200}$ \\[0.12cm]
+            Embedding &
+            $X\in\mathbb{R}^{200\times100}$; mỗi ID được ánh xạ sang vector
+            GloVe 100 chiều.
+        \end{tabularx}
+    \end{exampleblock}
+
+    \vspace{0.12cm}
+    \centering
+    \footnotesize
+    \textbf{Chống leakage:}
+    chia dữ liệu trước, rồi mới học vocabulary từ train.
+\end{frame}
+
+\begin{frame}{\textbf{\large Tại sao chọn GloVe 6B, 100 chiều?}}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.49\textwidth}
+            \begin{block}{GloVe cung cấp gì?}
+                \begin{itemize}
+                    \item Học từ thống kê đồng xuất trên \textbf{6 tỷ token}
+                    của Wikipedia 2014 + Gigaword 5.
+                    \item Khoảng \textbf{400.000 từ}; có sẵn các bản
+                    50/100/200/300 chiều.
+                    \item Các từ gần nghĩa có vector gần nhau ngay trước khi
+                    train trên Amazon Reviews.
+                \end{itemize}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.47\textwidth}
+            \begin{alertblock}{Phù hợp với thí nghiệm này}
+                \begin{itemize}
+                    \item Tập train chỉ có \textbf{16.324 review}: học embedding
+                    hoàn toàn từ đầu dễ thiếu dữ liệu.
+                    \item \textbf{100d} cân bằng thông tin và chi phí:
+                    $26.715\times100\approx2,67$ triệu tham số.
+                    \item \codeword{trainable=True}: giữ tri thức pretrained,
+                    sau đó thích nghi với ngôn ngữ review.
+                \end{itemize}
+            \end{alertblock}
+        \end{column}
+    \end{columns}
+
+    \vspace{0.18cm}
+    \begin{exampleblock}{Trade-off}
+        \centering
+        Nhanh và nhẹ hơn 300d, giàu thông tin hơn 50d; nhưng không phải
+        embedding theo ngữ cảnh và có thể thiếu từ đặc thù sản phẩm.
+    \end{exampleblock}
+\end{frame}
+
+% =========================================================
+\section{2. BiLSTM kết hợp Attention}
+
+\begin{frame}{\textbf{\large Vì sao chọn BiLSTM + Attention?}}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.31\textwidth}
+            \begin{block}{LSTM}
+                \centering
+                Ghi nhớ phụ thuộc dài tốt hơn SimpleRNN nhờ cell state và các cổng.
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.31\textwidth}
+            \begin{block}{Bidirectional}
+                \centering
+                Mỗi token nhận ngữ cảnh từ cả bên trái và bên phải.
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.31\textwidth}
+            \begin{block}{Attention}
+                \centering
+                Gán trọng số lớn hơn cho token quan trọng đối với sentiment.
+            \end{block}
+        \end{column}
+    \end{columns}
+
+    \vspace{0.55cm}
+    \begin{exampleblock}{Ví dụ}
+        ``The screen is excellent, \textbf{but} the battery is
+        \textbf{disappointing}.''\\
+        Mô hình cần đọc hai chiều và xác định phần nào ảnh hưởng mạnh hơn tới
+        rating cuối cùng.
+    \end{exampleblock}
+\end{frame}
+
+\begin{frame}{\textbf{\large Bên trong một ô LSTM}}
+    \begin{columns}[c,onlytextwidth]
+        \begin{column}{0.47\textwidth}
+            \centering
+            \safeincludegraphics[
+                width=\linewidth,
+                height=0.61\paperheight,
+                keepaspectratio
+            ]{lstm.png}
+
+            \vspace{0.08cm}
+            \scriptsize
+            Cell state $c_t$ là ``đường nhớ''; ba cổng điều khiển luồng thông tin.
+        \end{column}
+
+        \begin{column}{0.51\textwidth}
+            \scriptsize
+            \begin{align*}
+                f_t &= \sigma(W_fx_t+U_fh_{t-1}+b_f),\\
+                i_t &= \sigma(W_ix_t+U_ih_{t-1}+b_i),\\
+                \widetilde c_t &= \tanh(W_cx_t+U_ch_{t-1}+b_c),\\
+                c_t &= f_t\odot c_{t-1}+i_t\odot\widetilde c_t,\\
+                o_t &= \sigma(W_ox_t+U_oh_{t-1}+b_o),\\
+                h_t &= o_t\odot\tanh(c_t).
+            \end{align*}
+
+            \footnotesize
+            $f_t$: quên thông tin cũ;\quad
+            $i_t$: ghi thông tin mới;\quad
+            $o_t$: chọn phần được xuất.
+
+            \vspace{0.15cm}
+            \begin{block}{Ý nghĩa}
+                Phép cộng trên $c_t$ tạo đường truyền gradient ổn định hơn
+                SimpleRNN, giúp giữ tín hiệu sentiment qua chuỗi dài.
+            \end{block}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{\textbf{\large Kiến trúc mô hình chính}}
+    \centering
+    \begin{tikzpicture}[
+        node distance=0.55cm and 0.85cm,
+        layer/.style={
+            draw,
+            rounded corners,
+            minimum height=1.22cm,
+            text width=3.05cm,
+            inner xsep=4pt,
+            align=center,
+            font=\small
+        },
+        arrow/.style={-{Latex[length=2.2mm]},thick}
+    ]
+        \node[layer,fill=gray!10] (input) {Input\\$(B,200)$};
+        \node[layer,fill=blue!10,right=of input] (embed)
+            {GloVe Embedding\\$26.715\times100$};
+        \node[layer,fill=green!12,right=of embed] (bilstm)
+            {BiLSTM\\$128+128$ units};
+
+        \node[layer,fill=orange!18,below=of bilstm] (attn)
+            {Masked Additive\\Attention};
+        \node[layer,fill=purple!12,left=of attn] (dense)
+            {Dense 64\\ReLU + L2};
+        \node[layer,fill=red!12,left=of dense] (out)
+            {Softmax 5 lớp\\$\hat y=\arg\max p_k$};
+
+        \draw[arrow] (input) -- (embed);
+        \draw[arrow] (embed) -- node[above,font=\scriptsize]{Dropout} (bilstm);
+        \draw[arrow] (bilstm) -- node[right,font=\scriptsize]{Dropout} (attn);
+        \draw[arrow] (attn) -- (dense);
+        \draw[arrow] (dense) -- node[above,font=\scriptsize]{Dropout} (out);
+    \end{tikzpicture}
+
+    \vspace{0.25cm}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.49\textwidth}
+            \begin{itemize}
+                \item $h_t=[\overrightarrow h_t;\overleftarrow h_t]
+                \in\mathbb{R}^{256}$.
+                \item BiLSTM output: $(B,200,256)$.
+                \item Attention context: $(B,256)$.
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.47\textwidth}
+            \begin{itemize}
+                \item Dropout: 0,5; L2: 0,01.
+                \item Tổng tham số: 2.988.817.
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{\textbf{\large Attention làm gì với chuỗi hidden state?}}
+    \vspace*{-0.15cm}
+    \centering
+    \begin{tikzpicture}[
+        token/.style={
+            rounded corners,
+            minimum width=1.65cm,
+            minimum height=0.72cm,
+            align=center,
+            font=\scriptsize
+        },
+        arrow/.style={-{Latex[length=2mm]},thick}
+    ]
+        \node[token,fill=blue!10] (the) at (0,0) {the\\$\alpha_1=0{,}03$};
+        \node[token,fill=green!18] (screen) at (1.9,0)
+            {screen\\$\alpha_2=0{,}10$};
+        \node[token,fill=green!35] (excellent) at (3.8,0)
+            {excellent\\$\alpha_3=0{,}22$};
+        \node[token,fill=orange!18] (but) at (5.7,0)
+            {but\\$\alpha_4=0{,}08$};
+        \node[token,fill=red!20] (battery) at (7.6,0)
+            {battery\\$\alpha_5=0{,}17$};
+        \node[token,fill=red!55] (bad) at (9.5,0)
+            {disappointing\\$\alpha_6=0{,}40$};
+
+        \node[draw,rounded corners,fill=purple!10,align=center,font=\small]
+            (context) at (4.75,-1.65)
+            {Context vector $c$\\biểu diễn toàn review};
+
+        \foreach \x in {the,screen,excellent,but,battery,bad}
+            \draw[arrow,gray] (\x.south) -- (context.north);
+    \end{tikzpicture}
+
+    \vspace{0.12cm}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Không dùng hidden state cuối}
+                BiLSTM trả về
+                $H=[h_1,\ldots,h_{200}]$, với $h_t\in\mathbb{R}^{256}$.
+                Attention học mức đóng góp của \textbf{từng vị trí}.
+            \end{block}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Trực giác}
+                Token mang sentiment mạnh nhận $\alpha_t$ lớn. Context là
+                trung bình có trọng số, nên vẫn giữ thông tin ở xa cuối câu.
+            \end{block}
+        \end{column}
+    \end{columns}
+
+    \scriptsize\raggedright
+    Các trọng số trên chỉ là ví dụ minh họa cơ chế, không phải output đã trích
+    từ artifact hiện tại.
+\end{frame}
+
+\begin{frame}{\textbf{\large Additive Attention: từ score đến context}}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.57\textwidth}
+            \small
+            Với $H\in\mathbb{R}^{B\times200\times256}$:
+            \begin{align*}
+                u_t &= \tanh(W_ah_t+b_a),\\
+                e_t &= v_a^\top u_t,\\
+                \alpha_t &= \frac{\exp(e_t)}
+                {\sum_{j=1}^{T}\exp(e_j)},\\
+                c &= \sum_{t=1}^{T}\alpha_t h_t.
+            \end{align*}
+
+            \begin{block}{Vai trò của từng hàm}
+                \begin{itemize}
+                    \item $\tanh$: tạo phép chấm điểm phi tuyến.
+                    \item $v_a^\top$: nén vector thành một score vô hướng.
+                    \item Softmax: chuẩn hóa $\alpha_t\ge0$ và
+                    $\sum_t\alpha_t=1$.
+                    \item Tổng có trọng số: $(B,200,256)\rightarrow(B,256)$.
+                \end{itemize}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.39\textwidth}
+            \begin{alertblock}{Mask padding}
+                Trước Softmax:
+                \[
+                    e_t\leftarrow
+                    \begin{cases}
+                        e_t,&m_t=1,\\
+                        -10^9,&m_t=0.
+                    \end{cases}
+                \]
+                Vì $\exp(-10^9)\approx0$, token 0 không được góp vào context.
+            \end{alertblock}
+
+            \begin{block}{Tham số học được}
+                \begin{itemize}
+                    \item $W_a\in\mathbb{R}^{256\times256}$
+                    \item $b_a\in\mathbb{R}^{256}$
+                    \item $v_a\in\mathbb{R}^{256}$
+                \end{itemize}
+                Tổng: \textbf{66.048 tham số}.
+            \end{block}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{\textbf{\large Hàm mất mát: Cross-Entropy + L2}}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.56\textwidth}
+            \begin{block}{1. Khớp nhãn bằng Cross-Entropy}
+                Softmax đổi logits thành phân phối xác suất:
+                \[
+                    p_{i,k}=\frac{\exp(z_{i,k})}
+                    {\sum_{j=0}^{4}\exp(z_{i,j})},
+                    \qquad \sum_{k=0}^{4}p_{i,k}=1.
+                \]
+                Với nhãn nguyên $y_i\in\{0,\ldots,4\}$:
+                \[
+                    \mathcal L_{\mathrm{CE}}
+                    =-\frac{1}{N}\sum_{i=1}^{N}\log p_{i,y_i}.
+                \]
+                Bản \textbf{sparse} nhận trực tiếp nhãn nguyên, không cần one-hot.
+            \end{block}
+
+            \begin{block}{2. Phạt độ phức tạp bằng L2}
+                \[
+                    \mathcal L
+                    =\mathcal L_{\mathrm{CE}}
+                    +\lambda\!\left(
+                    \lVert W_{\mathrm{dense}}\rVert_2^2+
+                    \lVert W_{\mathrm{out}}\rVert_2^2\right),
+                    \quad\lambda=0{,}01.
+                \]
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.40\textwidth}
+            \begin{exampleblock}{Tại sao ``chồng'' hai thành phần?}
+                \begin{itemize}
+                    \item Softmax + CE: tạo xác suất rồi tối đa hóa xác suất của
+                    lớp đúng; sai mà quá tự tin sẽ bị phạt mạnh.
+                    \item L2: hạn chế trọng số quá lớn, giảm overfitting.
+                    \item Một thành phần học dữ liệu; một thành phần kiểm soát
+                    độ phức tạp.
+                \end{itemize}
+            \end{exampleblock}
+
+            \begin{alertblock}{Nhược điểm trong bài toán này}
+                \begin{itemize}
+                    \item CE coi năm lớp độc lập: sai $1\!\to\!2$ và
+                    $1\!\to\!5$ đều là ``sai lớp''.
+                    \item Không tự cân bằng lớp; artifact đang
+                    \textbf{tắt class weights}.
+                    \item $\lambda$ quá lớn có thể gây underfitting.
+                \end{itemize}
+            \end{alertblock}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{\textbf{\large Loss tối ưu khác metric đánh giá}}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.47\textwidth}
+            \begin{block}{Khi huấn luyện}
+                \centering
+                $\mathcal L_{\mathrm{CE}}+\mathcal L_{\mathrm{L2}}$
+
+                \vspace{0.18cm}
+                \raggedright
+                Trơn, khả vi và cho gradient trực tiếp tới toàn bộ xác suất
+                Softmax. Adam tối thiểu hóa loss này.
+            \end{block}
+
+            \begin{block}{Cấu hình}
+                \small
+                Adam $10^{-3}$; batch 128; tối đa 10 epoch; Dropout 0,5;
+                EarlyStopping theo \codeword{val_loss}.
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.49\textwidth}
+            \begin{alertblock}{Khi đánh giá}
+                \begin{itemize}
+                    \item \textbf{Macro F1}: đo chất lượng đồng đều trên năm lớp.
+                    \item \textbf{Rating MAE}: đo khoảng cách giữa hai rating.
+                    \item Cả hai đang tính sau $\arg\max$, nên không thuận tiện
+                    để tối ưu trực tiếp bằng gradient.
+                \end{itemize}
+            \end{alertblock}
+
+            \begin{exampleblock}{Hướng cải thiện}
+                Class-weighted CE hoặc focal loss cho lớp thiểu số; ordinal loss
+                hoặc CE kết hợp expected-rating loss để đưa thứ tự 1--5 sao vào
+                quá trình học.
+            \end{exampleblock}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{\textbf{\large Kết quả riêng của BiLSTM + Attention}}
+    \begin{columns}[c,onlytextwidth]
+        \begin{column}{0.57\textwidth}
+            \centering
+            \safeincludegraphics[width=\linewidth,height=0.39\paperheight,keepaspectratio]
+            {bilstm_attention_training_history.png}
+
+            \vspace{0.05cm}
+            \scriptsize Learning curve trên 10 epoch
+        \end{column}
+
+        \begin{column}{0.39\textwidth}
+            \centering
+            \safeincludegraphics[height=0.39\paperheight,keepaspectratio]
+            {bilstm_attention_confusion_matrix.png}
+
+            \vspace{0.05cm}
+            \scriptsize Confusion matrix trên 4.081 mẫu validation
+        \end{column}
+    \end{columns}
+
+    \vspace{0.35cm}
+    \centering
+    \begin{beamercolorbox}[
+        wd=\textwidth,
+        sep=0.18cm,
+        center,
+        rounded=true
+    ]{block body}
+        \textbf{Accuracy 81,38\% \qquad Macro F1 0,3727
+        \qquad Rating MAE 0,3328}
+    \end{beamercolorbox}
+\end{frame}
+
+% =========================================================
+\section{3. So sánh mô hình}
+
+\begin{frame}{\textbf{\large So sánh chất lượng tổng hợp}}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.54\textwidth}
+            \centering
+            \safeincludegraphics[width=\linewidth]{quality_metrics.png}
+        \end{column}
+
+        \begin{column}{0.44\textwidth}
+            \centering
+            \scriptsize
+            \begin{tabular}{lrrr}
+                \toprule
+                \textbf{Mô hình} & \textbf{Acc.} & \textbf{Macro F1} &
+                \textbf{MAE} \\
+                \midrule
+                SimpleRNN & 0,7493 & 0,3029 & 0,6288 \\
+                \textbf{BiLSTM + Attn.} &
+                \textbf{0,8138} & \textbf{0,3727} & \textbf{0,3328} \\
+                Transformer & 0,7988 & 0,3336 & 0,4009 \\
+                \bottomrule
+            \end{tabular}
+
+            \vspace{0.45cm}
+            \begin{block}{Nhận xét}
+                \begin{itemize}
+                    \item BiLSTM + Attention tốt nhất ở mọi metric chất lượng.
+                    \item Hơn Transformer 1,49 điểm \% Accuracy.
+                    \item Giảm MAE 47,08\% so với SimpleRNN.
+                \end{itemize}
+            \end{block}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{\textbf{\large F1-score theo từng mức rating}}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.61\textwidth}
+            \centering
+            \safeincludegraphics[width=\linewidth]{per_class_f1.png}
+        \end{column}
+
+        \begin{column}{0.36\textwidth}
+            \begin{alertblock}{Phát hiện quan trọng}
+                \begin{itemize}
+                    \item Cả ba mô hình nhận diện tốt lớp 1 và 5 sao.
+                    \item SimpleRNN và Transformer có F1 bằng 0 ở lớp 2--4.
+                    \item BiLSTM + Attention có dự đoán đúng lớp giữa, nhưng F1
+                    vẫn dưới 0,07.
+                \end{itemize}
+            \end{alertblock}
+
+            \small
+            Accuracy cao \textbf{không đồng nghĩa} bài toán 5 lớp đã được giải
+            quyết tốt.
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{\textbf{\large So sánh chi phí tính toán}}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.62\textwidth}
+            \centering
+            \safeincludegraphics[width=\linewidth]{resource_comparison.png}
+        \end{column}
+
+        \begin{column}{0.35\textwidth}
+            \begin{block}{Đánh đổi}
+                \begin{itemize}
+                    \item BiLSTM + Attention đạt chất lượng cao nhất nhưng train
+                    lâu nhất: 308,47 giây.
+                    \item Transformer nhanh nhất: 56,42 giây train và
+                    0,186 ms/mẫu.
+                    \item Số tham số ba mô hình khá gần nhau do embedding chiếm
+                    phần lớn.
+                \end{itemize}
+            \end{block}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+% =========================================================
+\section{4. Kết luận}
+
+\begin{frame}{\textbf{\large Kết luận và hướng phát triển}}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Kết luận}
+                \begin{itemize}
+                    \item BiLSTM + Attention là mô hình tốt nhất trong ba kiến
+                    trúc đã thử.
+                    \item BiLSTM cung cấp ngữ cảnh hai chiều; attention tổng hợp
+                    token linh hoạt hơn hidden state cuối.
+                    \item Mô hình phù hợp làm kiến trúc chính của project.
+                \end{itemize}
+            \end{block}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \begin{alertblock}{Hạn chế và hướng tiếp theo}
+                \begin{itemize}
+                    \item Mất cân bằng lớp làm mô hình co cụm về 1 và 5 sao.
+                    \item Bật class weights hoặc thử focal loss.
+                    \item Chọn checkpoint theo Macro F1.
+                    \item Thử ordinal loss và tạo test set độc lập.
+                    \item Xuất attention weights để phân tích token.
+                \end{itemize}
+            \end{alertblock}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\section{5. Tài liệu tham khảo}
+
+\begin{frame}[allowframebreaks]{\textbf{\large Tài liệu tham khảo}}
+    \scriptsize
+    \begin{enumerate}
+        \item Amazon Reviews Dataset, Kaggle:
+        \url{https://www.kaggle.com/datasets/dongrelaxman/amazon-reviews-dataset}.
+
+        \item S. Hochreiter and J. Schmidhuber,
+        ``Long Short-Term Memory,'' \textit{Neural Computation}, 1997.
+
+        \item D. Bahdanau, K. Cho, and Y. Bengio,
+        ``Neural Machine Translation by Jointly Learning to Align and
+        Translate,'' \textit{ICLR}, 2015.
+
+        \item J. Pennington, R. Socher, and C. D. Manning,
+        ``GloVe: Global Vectors for Word Representation,''
+        \textit{EMNLP}, 2014.
+
+        \item A. Vaswani et al.,
+        ``Attention Is All You Need,'' \textit{NeurIPS}, 2017.
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}[c,plain,noframenumbering]
+    \centering
+    \Huge\color{hustred}{\textbf{Cảm ơn mọi người\\đã chú ý lắng nghe!}}
+\end{frame}
+
+\end{document}

@@ -1,0 +1,36 @@
+{
+  "model_key": "rnn",
+  "model_name": "SimpleRNN",
+  "k_folds": 5,
+  "average_metrics": {
+    "accuracy": 0.6985112861611198,
+    "accuracy_std": 0.06486631156748694,
+    "macro_precision": 0.2736140279390741,
+    "macro_precision_std": 0.015765908376940013,
+    "macro_recall": 0.30932201172868573,
+    "macro_recall_std": 0.04642555612562343,
+    "macro_f1": 0.2719538072249077,
+    "macro_f1_std": 0.04533498114170324,
+    "weighted_f1": 0.6337227856484141,
+    "weighted_f1_std": 0.06524452971554202,
+    "rating_mae": 0.841284803801452,
+    "rating_mae_std": 0.277387499032227
+  },
+  "config": {
+    "k_folds": 5,
+    "max_words": 50000,
+    "max_len": 200,
+    "embedding_dim": 100,
+    "dropout_rate": 0.5,
+    "l2_rate": 0.01,
+    "num_classes": 5,
+    "batch_size": 128,
+    "epochs": 10,
+    "validation_split": 0.2,
+    "seed": 42,
+    "max_samples": null,
+    "use_class_weights": false,
+    "output_dir": "outputs/rnn",
+    "rnn_units": 128
+  }
+}

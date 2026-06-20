@@ -3,8 +3,8 @@
   "model_name": "BiLSTM + Attention",
   "parameters": 2988817,
   "epochs_trained": 10,
-  "training_seconds": 308.4682985829422,
-  "inference_ms_per_sample": 0.810331985556617,
+  "training_seconds": 219.360300750006,
+  "inference_ms_per_sample": 0.606511251410322,
   "validation_samples": 4081,
   "config": {
     "max_words": 50000,
@@ -18,16 +18,16 @@
     "validation_split": 0.2,
     "seed": 42,
     "max_samples": null,
-    "use_class_weights": false,
+    "use_class_weights": true,
     "output_dir": "outputs/bilstm_attention",
     "lstm_units": 128
   },
   "metrics": {
-    "accuracy": 0.8137711345258515,
-    "macro_precision": 0.47218679595943386,
-    "macro_recall": 0.39463152638683113,
-    "macro_f1": 0.37271525758341706,
-    "weighted_f1": 0.754916901229809,
-    "rating_mae": 0.33276157804459694
+    "accuracy": 0.6714040676304828,
+    "macro_precision": 0.4702483614211997,
+    "macro_recall": 0.5169324150372285,
+    "macro_f1": 0.47194736464633175,
+    "weighted_f1": 0.717567834452852,
+    "rating_mae": 0.4533202646410194
   }
 }

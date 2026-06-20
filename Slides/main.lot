@@ -1,0 +1,15 @@
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {2.1}{\ignorespaces Phân bố nhãn trên tập validation}}{8}{table.caption.5}%
+\contentsline {table}{\numberline {2.2}{\ignorespaces Cấu hình thực tế lấy từ các tệp \texttt {metrics.json}}}{10}{table.caption.6}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {3.1}{\ignorespaces Chi tiết từng lớp của mô hình chính}}{13}{table.caption.8}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {4.1}{\ignorespaces So sánh định tính ba kiến trúc}}{21}{table.caption.11}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {5.1}{\ignorespaces Kết quả trên cùng tập validation 4.081 mẫu}}{22}{table.caption.12}%
+\contentsline {table}{\numberline {5.2}{\ignorespaces F1-score từng lớp}}{24}{table.caption.15}%
+\contentsline {table}{\numberline {5.3}{\ignorespaces Phân bố nhãn dự đoán của BiLSTM + Attention}}{25}{table.caption.17}%
+\contentsline {table}{\numberline {5.4}{\ignorespaces Số tham số và thời gian ghi nhận trong artifact}}{27}{table.caption.20}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {6.1}{\ignorespaces Thứ tự ưu tiên cải thiện project}}{32}{table.caption.22}%

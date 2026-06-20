@@ -1,0 +1,15 @@
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Kiến trúc chi tiết của mô hình BiLSTM + Attention được sử dụng}}{12}{figure.caption.7}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Loss và Accuracy theo epoch của BiLSTM + Attention}}{16}{figure.caption.9}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Confusion matrix của BiLSTM + Attention trên 4.081 mẫu validation}}{17}{figure.caption.10}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {5.1}{\ignorespaces So sánh các metric chất lượng tổng hợp}}{23}{figure.caption.13}%
+\contentsline {figure}{\numberline {5.2}{\ignorespaces F1-score theo từng lớp rating}}{24}{figure.caption.14}%
+\contentsline {figure}{\numberline {5.3}{\ignorespaces Confusion matrix của ba mô hình}}{25}{figure.caption.16}%
+\contentsline {figure}{\numberline {5.4}{\ignorespaces Validation loss và validation accuracy của ba mô hình}}{26}{figure.caption.18}%
+\contentsline {figure}{\numberline {5.5}{\ignorespaces Training history chi tiết của hai mô hình đối chứng}}{26}{figure.caption.19}%
+\contentsline {figure}{\numberline {5.6}{\ignorespaces So sánh số tham số, thời gian train và thời gian inference}}{27}{figure.caption.21}%
+\addvspace {10\p@ }

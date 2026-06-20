@@ -1,0 +1,36 @@
+{
+  "model_key": "bilstm_attention",
+  "model_name": "BiLSTM + Attention",
+  "k_folds": 5,
+  "average_metrics": {
+    "accuracy": 0.8159984577021202,
+    "accuracy_std": 0.002956806970926161,
+    "macro_precision": 0.4518450701632012,
+    "macro_precision_std": 0.07839705496963671,
+    "macro_recall": 0.39467763564220204,
+    "macro_recall_std": 0.007214622738658388,
+    "macro_f1": 0.3699875181080297,
+    "macro_f1_std": 0.013927961539676442,
+    "weighted_f1": 0.7556732839530363,
+    "weighted_f1_std": 0.006406845110831019,
+    "rating_mae": 0.32923233444321126,
+    "rating_mae_std": 0.008604345501473768
+  },
+  "config": {
+    "k_folds": 5,
+    "max_words": 50000,
+    "max_len": 200,
+    "embedding_dim": 100,
+    "dropout_rate": 0.5,
+    "l2_rate": 0.01,
+    "num_classes": 5,
+    "batch_size": 128,
+    "epochs": 10,
+    "validation_split": 0.2,
+    "seed": 42,
+    "max_samples": null,
+    "use_class_weights": false,
+    "output_dir": "outputs/bilstm_attention",
+    "lstm_units": 128
+  }
+}

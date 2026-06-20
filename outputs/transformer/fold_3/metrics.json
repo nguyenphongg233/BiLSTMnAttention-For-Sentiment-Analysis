@@ -1,0 +1,36 @@
+{
+  "model_key": "transformer_fold_3",
+  "model_name": "Transformer Encoder (Fold 3)",
+  "parameters": 2781845,
+  "epochs_trained": 6,
+  "training_seconds": 39.35265424998943,
+  "inference_ms_per_sample": 0.16263977743744595,
+  "validation_samples": 4080,
+  "config": {
+    "k_folds": 5,
+    "max_words": 50000,
+    "max_len": 200,
+    "embedding_dim": 100,
+    "dropout_rate": 0.5,
+    "l2_rate": 0.01,
+    "num_classes": 5,
+    "batch_size": 128,
+    "epochs": 10,
+    "validation_split": 0.2,
+    "seed": 42,
+    "max_samples": null,
+    "use_class_weights": false,
+    "output_dir": "outputs/transformer",
+    "num_heads": 4,
+    "ff_dim": 256,
+    "transformer_blocks": 1
+  },
+  "metrics": {
+    "accuracy": 0.803186274509804,
+    "macro_precision": 0.30538405943602603,
+    "macro_recall": 0.37305310371129924,
+    "macro_f1": 0.3354326772435797,
+    "weighted_f1": 0.7360970888132998,
+    "rating_mae": 0.3845588235294118
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "model_key": "bilstm_attention_fold_2",
+  "model_name": "BiLSTM + Attention (Fold 2)",
+  "parameters": 2950017,
+  "epochs_trained": 10,
+  "training_seconds": 218.68612908304203,
+  "inference_ms_per_sample": 0.5621160970463586,
+  "validation_samples": 4081,
+  "config": {
+    "k_folds": 5,
+    "max_words": 50000,
+    "max_len": 200,
+    "embedding_dim": 100,
+    "dropout_rate": 0.5,
+    "l2_rate": 0.01,
+    "num_classes": 5,
+    "batch_size": 128,
+    "epochs": 10,
+    "validation_split": 0.2,
+    "seed": 42,
+    "max_samples": null,
+    "use_class_weights": false,
+    "output_dir": "outputs/bilstm_attention",
+    "lstm_units": 128
+  },
+  "metrics": {
+    "accuracy": 0.8115657926978682,
+    "macro_precision": 0.37662842831748866,
+    "macro_recall": 0.3816672758004859,
+    "macro_f1": 0.34341468593743774,
+    "weighted_f1": 0.7442333422463103,
+    "rating_mae": 0.34084783141386915
+  }
+}

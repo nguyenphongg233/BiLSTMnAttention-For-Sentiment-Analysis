@@ -1,16 +1,16 @@
 Model,Rating,F1
-SimpleRNN,1 sao,0.860685379714138
+SimpleRNN,1 sao,0.7189483227561196
 SimpleRNN,2 sao,0.0
 SimpleRNN,3 sao,0.0
-SimpleRNN,4 sao,0.0
-SimpleRNN,5 sao,0.6538011695906433
-BiLSTM + Attention,1 sao,0.9167270094134684
-BiLSTM + Attention,2 sao,0.0158102766798418
-BiLSTM + Attention,3 sao,0.0648648648648648
-BiLSTM + Attention,4 sao,0.0674157303370786
-BiLSTM + Attention,5 sao,0.7987584066218314
-Transformer,1 sao,0.9056603773584906
-Transformer,2 sao,0.0
-Transformer,3 sao,0.0
-Transformer,4 sao,0.0
-Transformer,5 sao,0.7620947630922693
+SimpleRNN,4 sao,0.1890209394453876
+SimpleRNN,5 sao,0.243312101910828
+BiLSTM + Attention,1 sao,0.8125
+BiLSTM + Attention,2 sao,0.2094818081587651
+BiLSTM + Attention,3 sao,0.2318271119842829
+BiLSTM + Attention,4 sao,0.3300970873786408
+BiLSTM + Attention,5 sao,0.7758308157099698
+Transformer,1 sao,0.7568312284730195
+Transformer,2 sao,0.167032967032967
+Transformer,3 sao,0.1645962732919254
+Transformer,4 sao,0.1569620253164557
+Transformer,5 sao,0.7588805166846071

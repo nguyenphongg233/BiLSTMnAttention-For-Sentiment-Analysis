@@ -1,0 +1,6 @@
+\xpg@aux {}{vietnamese}
+\beamer@sectionintoc {1}{1. Bài toán và dữ liệu}{4}{0}{1}
+\beamer@sectionintoc {2}{2. BiLSTM kết hợp Attention}{9}{0}{2}
+\beamer@sectionintoc {3}{3. So sánh mô hình}{17}{0}{3}
+\beamer@sectionintoc {4}{4. Kết luận}{20}{0}{4}
+\beamer@sectionintoc {5}{5. Tài liệu tham khảo}{21}{0}{5}

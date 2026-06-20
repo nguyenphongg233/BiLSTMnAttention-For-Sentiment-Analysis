@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1] if "__file__" in globals() else Path.
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from sentiment_pipeline import base_config, env_int, run_pipeline
+from sentiment_pipeline import base_config, env_int, run_pipeline, sparse_ordinal_loss
 
 
 @tf.keras.utils.register_keras_serializable(package="sentiment")
@@ -145,7 +145,7 @@ def build_model(vocab_size: int, config: dict) -> Model:
     model = Model(inputs, outputs, name="Transformer_Encoder_Classifier")
     model.compile(
         optimizer="adam",
-        loss="sparse_categorical_crossentropy",
+        loss=sparse_ordinal_loss,
         metrics=["accuracy"],
     )
     return model
